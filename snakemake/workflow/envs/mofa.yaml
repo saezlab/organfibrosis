@@ -1,0 +1,29 @@
+name: mofa
+channels:
+  - conda-forge
+  - bioconda
+  - aksarkar
+  - r
+dependencies:
+  - python=3.10
+  - r-base=4.2
+  - r-devtools
+  - r-dplyr=1.1.1
+  - r-tidyr
+  - r-tibble
+  - r-purrr=1.0.1
+  - r-ggplot2
+  - r-ggupset
+  - r-tidyverse
+  - r-cowplot
+  - r-ranger=0.15.1
+  - r-rocr=1.0_11
+  - bioconductor-scran
+  - bioconductor-summarizedexperiment=1.28.0
+  - bioconductor-complexheatmap
+  - bioconductor-edger=3.40.0
+  - bioconductor-scater
+  - r-matrix=1.6-1
+  - pip
+  - pip:
+    - mofapy2==0.7.0

@@ -1,0 +1,9 @@
+__default__:
+  jobname: "{rule}"
+  nodes: 1
+  ppn: 1
+  pmem: "1gb"
+  walltime: "5:00"
+  queue: "short"
+  jobout: "oe"
+  outdir: "logs/{rule}"

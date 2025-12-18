@@ -1,0 +1,16 @@
+restart-times: 0
+jobscript: "slurm-jobscript.sh"
+cluster: "slurm-submit.py"
+cluster-status: "slurm-status.py"
+cluster-cancel: "scancel"
+max-jobs-per-second: 10
+max-status-checks-per-second: 10
+local-cores: 16
+latency-wait: 60
+use-conda: True
+use-envmodules: True
+jobs: 10
+default-resources:
+    - runtime=7200
+    - mem_mb=16000
+    - partition="cpu-single"

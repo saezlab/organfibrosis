@@ -1,0 +1,34 @@
+name: mofa
+channels:
+  - conda-forge
+  - bioconda
+  - aksarkar
+  - r
+dependencies:
+  - python=3.10
+  - zlib
+  - r-base=4.4.1
+  - r-devtools
+  - r-dplyr
+  - r-tidyr
+  - r-tibble
+  - r-purrr
+  - r-ggplot2
+  - r-ggupset
+  - r-tidyverse
+  - r-cowplot
+  - r-ranger
+  - r-rocr=1.0_11
+  - r-magrittr=2.0.3
+  - r-seurat
+  - r-matrix
+  - r-lmertest
+  - r-ggpubr
+  - r-lme4
+  - r-biocmanager
+  - r-argparser
+  - r-data.table
+  - r-stringr
+  - r-igraph
+  - r-cairo
+

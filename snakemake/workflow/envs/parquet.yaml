@@ -1,0 +1,23 @@
+name: scanpy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.10
+  - numba=0.60.0
+  - scanpy=1.10.4
+  - matplotlib<3.7
+  - seaborn
+  - pip
+  - genomepy
+  - anytree
+  - openpyxl
+  - upsetplot
+  - scikit-bio
+  - pip:
+    - fastparquet==2024.11.0
+    - decoupler==1.9.0
+    - adjustText
+    - pyarrow
+  - numpy

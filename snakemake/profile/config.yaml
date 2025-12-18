@@ -1,0 +1,131 @@
+project_name: 'cross_organ_fibrosis'
+workdir: '/mnt/sds-hd/sd22b002/projects/fibrosis_theis_colab'
+scriptdir: 'scripts/snakemake/workflow/scripts'
+datasets:
+  HCAlung:
+    studies_ownmodel: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Strunz_2020']
+    studies_to_analyze: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Strunz_2020']
+  reheatHeart:
+    studies_ownmodel: ['Reichart_2022', 'Simonson_2023', 'Chaffin_2022', 'Koenig_2022', 'Kuppe_2022']
+    studies_to_analyze: ['Reichart_2022', 'Simonson_2023', 'Chaffin_2022', 'Koenig_2022', 'Kuppe_2022']
+    paths: {'Reichart_2022':'data/reheatHeart/Reichart_2022_pp.h5ad', 'Simonson_2023':'../reheat2/simplified/Simonson2023_ICM.h5ad', 'Chaffin_2022':'../reheat2/simplified/Chaffin2022_DCM.h5ad', 'Koenig_2022':'../reheat2/simplified/Koenig2022_DCM.h5ad', 'Kuppe_2022':'../KuppeRamirezLi_MI/snuc/hca_rnasamples.h5ad'}
+    technology: {"Reichart_2022":"10x 3' v3", "Simonson_2023": "10x 3' v3", "Chaffin_2022": "10x 3' v3", "Koenig_2022":"10x 5' v1",'Kuppe_2022':"10x 3' v3"}
+    metadata: ['data/reheatHeart/combined_meta.csv']
+  kidney:
+    studies_to_analyze: ['Lake_2023_sn','Lake_2023_sc','McCown_2025_sn','Muto_2022','Wilson_2022']
+    studies_ownmodel: ['Lake_2023_sn','Lake_2023_sc','McCown_2025_sn', 'Abedini_2024_sn', 'Abedini_2024_sc','Muto_2022','Li_2024','Wilson_2022']
+    paths: {'Lake_2023_sn':'data/kidney/kpmp_v15.h5ad',
+      'Lake_2023_sc':'data/kidney/kpmp_v15_sc.h5ad', 
+      'McCown_2025_sn':'../MichiganIgAN/results/preprocessing/Julio_OCEAN_Nereid.h5ad', 
+      'Abedini_2024_sn':'../KiPfi_KPMPdata/results/preprocessing/harmAbedini2024/snRNA.h5ad', 
+      'Abedini_2024_sc':'../KiPfi_KPMPdata/results/preprocessing/harmAbedini2024/scRNA.h5ad', 
+      'Muto_2022':'results/integration/kidney/post_label_transfer/Muto_2022_scarches_model/adata.h5ad', 
+      'Li_2024':'data/kidney/Li_2024_pp.h5ad', 
+      'Wilson_2022':'results/integration/kidney/post_label_transfer/Wilson_2022_scarches_model/adata.h5ad'}
+    metadata: {'Lake_2023_sc':'', 
+      'Lake_2023_sn':'', 
+      'McCown_2025_sn':'../MichiganIgAN/results/preprocessing/metadata_clean.csv',
+      'Abedini_2024_sn':'data/kidney/Abedini_metadata.csv', 
+      'Abedini_2024_sc':'data/kidney/Abedini_metadata.csv',
+      'Wilson_2022':'data/kidney/Wilson_2022/Wilson2022_metadata.tsv', 
+      'Muto_2022':'',
+      'Li_2024':''}
+  liver:
+    studies_to_analyze: ['Ramachandran_2019','Gribben_2024', "Watson_2025", 'Buonomo_2022']
+    studies_ownmodel: ['Ramachandran_2019','Gribben_2024', "Watson_2025", 'Buonomo_2022']
+    paths: {
+      'Ramachandran_2019':'data/liver/liver_altas/SCP2154/expression/64130e92cc37d750c0a62f14/',
+      'Gribben_2024':'data/liver/Gribben_2024/GSE202379_SeuratObject_AllCells.h5ad', 
+      'Andrews_2024_sc':'data/liver/Andrews_2024/', 
+      'Andrews_2024_sn':'data/liver/Andrews_2024/', 
+      "Watson_2025":'data/liver/Watson_2025/', 
+      'Buonomo_2022':'data/liver/Buonomo_2022/'}
+    metadata: { 
+      'Ramachandran_2019':'data/liver/liver_altas/SCP2154/metadata/2022_SI_human_liver_allcells_metadata_file.txt',
+      'Gribben_2024':'', 
+      'Andrews_2024_sc':'data/liver/Andrews_2024/Andrews_sc.h5ad', 
+      'Andrews_2024_sn':'data/liver/Andrews_2024/Andrews_sn.h5ad', 
+      "Watson_2025":'data/liver/Watson_2025/adata_healthy_diseased_nucseq.h5ad', 
+      'Buonomo_2022':'data/liver/Buonomo_2022/GSE168933_cell.annotations.csv'}
+    anno_file: {
+      'Ramachandran_2019':'data/liver/liver_altas/SCP2154/cluster/2022_SI_human_liver_allcells_cluster_file.txt',
+      'Gribben_2024':'', 
+      'Andrews_2024_sc':'', 
+      'Andrews_2024_sn':'', 
+      "Watson_2025":'data/liver/Watson_2025/samples.csv', 
+      'Buonomo_2022':''}  
+meta_organs: ['reheatHeart', 'HCAlung', 'kidney', 'liver']
+
+general_plotting:
+  condition_colors: {
+      'control':'#102542',
+      'fibrosis':'#828282'
+      }
+  diseasefibs: {'rest':'#801523', 'diseasefibs':'#77B3A5'}
+  celltype_colors: {'endothelial':'#8A2E38', 'epithelial':'#EB753E', 'fibroblast':'#002540', 'monomacro':'#B07200', 'myeloid':'#B07200', 'lymphoid':'#4D6504', 'pericytesSMCs':'#44826A', 'other':'#CCD0CC','mesenchymal':'#226F54'}
+  celltype_colors_human: {'endothelial':'#8A2E38', 'fibroblast':'#002540','myeloid':'#B07200', 'lymphoid':'#4D6504', 'pericytesSMCs':'#44826A', 'epithelial':'#EB753E', 'mesenchymal':'#226F54'}
+  views: ['endothelial', 'lymphoid', 'myeloid', 'mesenchymal', 'epithelial']
+  organ_colors: {'HCAlung' : "#74A1C6",'reheatHeart' : "#953E4E",'kidney':'#D0A52E','liver':'#578234'}
+  organ_colors_light: {'HCAlung' : "#CDDEFA",'reheatHeart' : "#D8919E",'kidney':'#DFCA8F', 'liver':'#ACE27F'}
+  study_colors: {"Reyfman_2019": "#68affc",
+    "Habermann_2020": "#4597A7",
+    "Adams_2020": "#191970",
+    "Tsukui_2020": "#0E57A4",
+    "Strunz_2020": "#7446f3",
+    "Reichart_2022": "#8B0000",
+    "Simonson_2023": "#F7382B",
+    "Chaffin_2022": "#FFA486",
+    "Koenig_2022": "#E97799",
+    "Kuppe_2022": '#703976',
+    "Lake_2023_sn": "#A5A50D",
+    "Lake_2023_sc": "#DFCF22",
+    "McCown_2025_sn": "#D0A52E",
+    "Abedini_2024_sn": "#BD8026",
+    "Abedini_2024_sc": "#877135",
+    "Muto_2022": "#FFC300",
+    "Li_2024": "#FFDC67",
+    "Wilson_2022": "#FFC567",
+    'Ramachandran_2019':'#ACE27F',
+    'Gribben_2024':'#008E18',
+    "Watson_2025":'#436E62', 
+    'Buonomo_2022':'#6BDF96'}
+  organ_names: {'HCAlung':'lung', 'reheatHeart':'heart', 'kidney':'kidney', 'liver':'liver'}
+
+preprocessing:
+  pseudobulk:
+    min_cells: 25
+    min_counts: 1000
+    filter_by_expr:
+      min_count: 10
+      min_total_count: 15
+  integration:
+    kidney:
+      ground_truth: ['Lake_2023_sn']
+      ctype_ground_truth: ['cell_type2']
+      old_ctype: {'Muto_2022':'celltype', 'Wilson_2022':'cell_type'}
+      batch_ground_truth: ['grouping']
+      path: ['results/preprocessing/kidney/Lake_2023_sn.h5ad']
+  metacolumns: ["identifier", "grouping","study", "ctype",'annotation_MOFA',
+                "cond_test", 'sample', 'region', 'organ',
+                'sex', 'batch', 'tech', 'age', 'modality','cell_type1', 'cell_type2',
+                'fibrosis score (interstitial fibrosis) in %', 'ischemia time in sec', 
+                'LVEF', 'BMI', 'Trichrome % fibrotic', 'modality','Fibrosis','eGFR',
+                'IFTA_binary', 'IFTA','clin_A1C','clin_global_glomerulosclerosis',
+                'clin_arteriosclerosis', 'hypertension','SAF.Score','Steatosis','Ballooning','Inflammation',
+                'Diabetes.type.2','nCount_RNA', 'pct_counts_mt','total_counts', 'n_genes_by_counts'
+                ]
+  metacolumns_unique: ["identifier", "grouping","study", 'organ',
+                        "cond_test", 'sample', 'region', 
+                        'sex', 'batch', 'tech', 'age', 
+                        'fibrosis score (interstitial fibrosis) in %', 'ischemia time in sec', 
+                        'LVEF', 'BMI', 'Trichrome % fibrotic', 'modality','Fibrosis','eGFR',
+                        'IFTA_binary', 'IFTA','clin_A1C','clin_global_glomerulosclerosis',
+                        'clin_arteriosclerosis', 'hypertension','SAF.Score','Steatosis','Ballooning','Inflammation',
+                        'Diabetes.type.2'
+              ]
+  fibroblasts:
+    scvi_resolutions: {'HCAlung': 0.3, 'reheatHeart': 0.7, 'kidney': 0.3, 'liver': 0.2}
+    diseasefibs:  {'HCAlung': ['3'], 'reheatHeart': ['1'], 'kidney': ['0', '4'], 'liver': ['1']}
+enrichment:
+  collectri: 'data/misc/genesets/collectri_20250602_dc_v2_0_2.csv'
+  progeny: 'data/misc/genesets/prog_20250602_dc_v2_0_2.csv'

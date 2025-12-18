@@ -1,0 +1,29 @@
+name: scanpy
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python
+  - numpy
+  - numba
+  - scanpy=1.9.4
+  - matplotlib<3.7
+  - seaborn
+  - pip
+  - genomepy
+  - anytree
+  - openpyxl
+  - upsetplot
+  - pip:
+    - muon
+    - mofax
+    - mofapy2
+    - git+https://github.com/saezlab/decoupler-py.git
+    - git+https://github.com/saezlab/liana-py.git
+    - omnipath
+    - pydeseq2
+    - PyComplexHeatmap
+    - adjustText
+    - harmony-pytorch
+    - leidenalg

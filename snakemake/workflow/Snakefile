@@ -1,0 +1,97 @@
+from snakemake.utils import min_version
+min_version("6.0")
+import os
+
+path = os.getcwd()
+configfile: '../profile/config.yaml'
+wd = config['workdir']
+workdir: wd
+organ =['HCAlung', 'reheatHeart', 'kidney', 'liver']
+
+studies1 = config['datasets'][organ[0]]['studies_to_analyze']
+studies2 = config['datasets'][organ[1]]['studies_to_analyze']
+studies3 = config['datasets'][organ[2]]['studies_to_analyze']
+studies4 = config['datasets'][organ[3]]['studies_to_analyze']
+
+
+rule all:
+    input:
+        expand('results/models/{organ}/model_stats.pdf', organ = organ),
+        expand('results/models/{organ}/meta_model_stats.pdf', organ  = organ),
+        'plots/analysis/interorgan_comparison/model_genes_overlap_absolute.csv',
+        'plots/analysis/qc/qc_overview.pdf',
+        expand('results/naba/{organ}/{study}_naba_scores.csv', organ = organ[0], study = studies1),
+        expand('results/naba/{organ}/{study}_naba_scores.csv', organ = organ[1], study = studies2),
+        expand('results/naba/{organ}/{study}_naba_scores.csv', organ = organ[2], study = studies3),
+        expand('results/naba/{organ}/{study}_naba_scores.csv', organ = organ[3], study = studies4),
+        'plots/analysis/interorgan_comparison/scDist/scDist_results.pdf',
+        'plots/analysis/interorgan_comparison/deg_dotproduct_clustered.pdf',
+        expand('results/patient_scoring/{organ}/{study}_ulmpval.csv', organ = organ[0], study = studies1),
+        expand('results/patient_scoring/{organ}/{study}_ulmpval.csv', organ = organ[1], study = studies2),
+        expand('results/patient_scoring/{organ}/{study}_ulmpval.csv', organ = organ[2], study = studies3),
+        expand('results/patient_scoring/{organ}/{study}_ulmpval.csv', organ = organ[3], study = studies4),
+        'results/deg/predicitions_auroc_all.pkl',
+        'results/deg/predicitions_auroc_unique.pkl',
+        'results/patient_scoring/geneset_scores_full_pbulks.csv',
+        'results/preprocessing/fibroblasts/all_fibs.h5ad',
+        'results/ccc/on_dl_allorgans.pckl',
+        'plots/analysis/interorgan_comparison/dl_meta/enrichment_on_dl.pdf',
+        'plots/analysis/interorgan_comparison/dl_meta/cross_organ_per_ctype_dl.pdf',
+        'plots/analysis/interorgan_comparison/mofacell_fibrosis_factor_scatter.pdf',
+        "results/resource_website/co_data.pckl",
+        "results/resource_website/difib_co_data.pckl",
+        "results/resource_website/spatial_data.pckl",
+        "results/resource_website/ccc_interactions.pckl",
+        "results/resource_website/deg_data.parquet",
+        "plots/spatial/ligand_receptor_coex/top_genes_heatmap.pdf",
+        "plots/analysis/ccc/ccc_dl_overview.pdf",
+        "results/resource_website/enrich_collectri.pckl",
+        "results/resource_website/enrich_difib_collectri.pckl",
+        "results/resource_website/difib_deg_data.parquet",
+        "results/resource_website/ccc_colocalization.pckl",
+        'results/dl_meta/organ_spec_top10_upregulated_allorgans.csv',
+        # for scvi integration
+        'results/integration/fibroblasts/integrated_latent_space.csv',
+        # after integration 
+        expand('results/preprocessing/fibroblasts/{organ}_markers_scvi.csv', organ  = organ),
+        'plots/myofib/interorgan_comparison/dl_meta/cross_organ_dl.pdf',
+        'plots/myofib/interorgan_comparison/dl_meta/enrichment_on_dl.pdf',
+        'results/myofib/ccc/on_dl_allorgans.pckl',
+        "plots/myofib/percent_unique_comparison.pdf",
+        "results/spatial/all_organs.csv",
+        'plots/analysis/myofib_identification/substate_stacked_bar.pdf',
+        
+module preprocessing:
+    snakefile: 'rules/preprocessing.smk'
+    config: config
+use rule * from preprocessing as PP_*
+
+module analysis:
+    snakefile: 'rules/analysis.smk'
+    config: config
+use rule * from analysis as AN_*
+
+module plotting:
+    snakefile: 'rules/plotting.smk'
+    config: config
+use rule * from plotting as PL_*
+
+module integration:
+    snakefile: 'rules/integration.smk'
+    config: config
+use rule * from integration as IN_*
+
+module myofib:
+    snakefile: 'rules/myofib.smk'
+    config: config
+use rule * from myofib as MY_*
+
+module spatial:
+    snakefile: 'rules/spatial.smk'
+    config: config
+use rule * from spatial as SP_*
+
+module dataformat:
+    snakefile: 'rules/dataformat.smk'
+    config: config
+use rule * from dataformat as DF_*
