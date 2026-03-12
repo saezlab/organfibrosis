@@ -3,7 +3,9 @@
 <img width="300" height="60" alt="organs" src="https://github.com/user-attachments/assets/22860868-1c0c-47cf-987e-b5edc295d0c4" />
 
 This repository contains the code corresponding to our manuscript:
-> *citation for preprint*
+> *Shared and organ-specific gene expression programs of fibrotic diseases
+Leonie Küchenhoff, Gahyun Kim, Jan D. Lanzer, Matthias Kretzler, Ricardo O. Ramirez Flores, Julio Saez-Rodriguez
+bioRxiv 2026.03.09.709232; doi: https://doi.org/10.64898/2026.03.09.709232*
 
 We conducted a large-scale meta-analysis of single-cell transcriptomic data from human healthy and fibrotic tissues to identify both shared and organ-specific transcriptomic profiles. Using datasets from the heart, kidney, lung, and liver, we constructed a single-cell fibrosis atlas of over five million cells from 20 studies, covering more than 25 etiologies across four organs.  
 Through systematic comparison of these datasets, we identified organ-specific as well as cross-organ fibrotic gene expression profiles in major cell types and disease fibroblast subpopulations, characterized by the excessive production of extracellular matrix, revealing a shared fibrotic response across tissues. 
@@ -32,8 +34,8 @@ The code was modulatized into the following modules:
 ## 📂 Where to get the data
 Non-processed data is found in the publications of indiviual datasets. 
 Processed pseudobulks and analysis results can be accessed in zenodo: 
-> *zenodo link*
+> *https://doi.org/10.5281/zenodo.18432221*
 
 ## 🌐 User-interface to explore the data
 Have a look at our interactive website where you can look up how your gene of interest behaves in fibrotic disease tissues:
-> *website link*
+> *https://organfibrosis.saezlab.org/*
