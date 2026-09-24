@@ -15,7 +15,7 @@ import mofax as mfx
 import pandas as pd
 import seaborn as sns
 import numpy as np
-
+from matplotlib.backends.backend_pdf import PdfPages
 
 plt.rcParams.update({"font.size": 20})
 sns.set_style("whitegrid")
@@ -108,6 +108,22 @@ def summarise_r2(r2_df: pd.DataFrame, factors: Sequence[str]) -> pd.DataFrame:
         .sort_values(["Group", "View"])
     )
 
+def get_union_of_top_x_genes(df, x):
+    """
+    function that extracts the gene name for the top x genes in each column and returns the union
+    of all top gene names from all columns
+    """
+    top_x_genes = set()
+
+    # Iterate over each column in the DataFrame
+    for col in df.columns:
+        # Get the indices (row names) of the top x values in the column
+        top_x_indices = df[col].nlargest(x).index
+        # Add these indices to the set
+        top_x_genes.update(top_x_indices)
+
+    return list(top_x_genes)
+
 
 def annotate_significance(
     ax: plt.Axes,
@@ -176,26 +192,58 @@ def build_palette(
     return palette
 
 
+def test_factor(metadata_study, loadings, factor, column):
+    """
+    function to test which condition in 'column' have lower mean values in loadings
+    """
+
+    loadings_meta = loadings.merge(metadata_study, left_on = ['sample', 'study'], right_on = ['sample', 'study'])
+
+    # Group by 'cond_test' and calculate the mean for the specified 'factor'
+    grouped_means = loadings_meta.groupby(column)[factor].mean().reset_index()
+
+    # Sort the grouped means by the 'factor' values
+    sorted_means = grouped_means.sort_values(factor)
+
+    # Extract the 'cond_test' value with the lowest mean 'factor' value
+    lower_value_condition = sorted_means[column].iloc[0]
+
+    return lower_value_condition
+
+
 def main(snakemake) -> None:  # noqa: D401 - Snakemake entrypoint
     organs: Sequence[str] = snakemake.params["organs"]
     organ_names: Mapping[str, str] = snakemake.params["organ_names"]
     organ_colors: Mapping[str, str] = snakemake.params["organ_colors"]
     condition_colors: Mapping[str, str] = snakemake.params["condition_colors"]
+    views: Mapping[str, str] = snakemake.params["views"]
 
     model_paths = group_paths_by_organ(snakemake.input["models"], organs)
     metadata_paths = group_paths_by_organ(snakemake.input["metadata"], organs)
+
+    org_color_real = {
+        real_names_key: organ_colors[real_names_dict_key]
+        for real_names_dict_key, real_names_key in organ_names.items()
+    }
 
     # Snakemake defines per-organ R2 output targets.
     r2_outputs = {
         organ: output_path
         for organ, output_path in zip(organs, snakemake.output["r2"])
     }
+    geneweight_outputs = dict(zip(organs, snakemake.output["geneweights"]))
     scatter_output = snakemake.output["scatter"]
     boxplot_output = snakemake.output["boxplot"]
+    r2plot = snakemake.output["r2plot"]
+    factor_corr_plot_path = snakemake.output["factor_corr_plot_path"]
+    topweight_plot_path = snakemake.output["topweight_plot_path"]
+    topweight_csv_path = snakemake.output["topweight_csv_path"]
 
     organ_results = {}
 
-    for organ in organs:
+
+    fig, ax = plt.subplots(2, 4, figsize = (10, 10), tight_layout = True,sharey = True)
+    for count, organ in enumerate(organs):
         display_name = organ_names[organ]
         if organ not in model_paths:
             raise ValueError(f"No MOFA model path supplied for organ '{organ}'.")
@@ -235,9 +283,64 @@ def main(snakemake) -> None:  # noqa: D401 - Snakemake entrypoint
             if factor2 != factor1:
                 significant_factors.append(factor2)
 
+
+        # get gene weights
+        weights = model.get_weights(df=True)
+        samples = model.get_samples()
+        loadingsm = loadings.merge(samples, left_index = True, right_on = 'sample', how = 'left').rename(columns = {'group':'study'})
+
+
+
+        # test if fibrotic samples have higher loadings in first factor
+        lower_value_condition = test_factor(metadata_subset.reset_index(names = 'sample'), loadingsm, factor1, 'cond_test')
+
+        if lower_value_condition == 'fibrosis':
+            weights.loc[:, factor1] = weights.loc[:, factor1] * (-1)
+            print(f'changed order of {organ} gene weights in {factor1}')
+
+        # test if fibrotic samples have higher loadings in second factor
+        lower_value_condition = test_factor(metadata_subset.reset_index(names = 'sample'), loadingsm, factor2, 'cond_test')
+
+        if lower_value_condition == 'fibrosis':
+            weights.loc[:, factor2] = weights.loc[:, factor2] * (-1)
+            print(f'changed order of {organ} gene weights in {factor2}')
+
+
+        features = model.features
+        # fix annotation of features (all include celltype_ before gene name)
+        for key, item in features.items():
+            fixed = np.array([gene.split('_', 1)[1] if '_' in gene else '' for gene in item])
+            features[key] = fixed
+
+
+        index_names = weights.index.str.split('_')[:].tolist()
+        weights['celltype'] = [item[0] for item in index_names]
+        weights['gene'] =  ['_'.join(item[1:]) if len(item) > 1 else item[1] for item in index_names]
+
+
+        # save fibrosis associated factor weights specifically
+        fib_weights = weights.loc[:, ['gene','celltype',factor1, factor2]].rename(
+                columns = {factor1: f'{factor1}_{organ_names[organ]}',
+                        factor2: f'{factor2}_{organ_names[organ]}'}
+            )
+
+        # Keep the index: compare_mofa_lmm.py reads these CSVs with index_col=0.
+        fib_weights.to_csv(geneweight_outputs[organ])
+
         # Summarise explained variance for the selected factors.
-        r2_summary = summarise_r2(r2, significant_factors)
+        r2_summary = summarise_r2(r2, [factor1, factor2])
         r2_summary.to_csv(r2_outputs[organ], index=False)
+
+
+        # plot summed r2 of sig. factors per study and cell type
+        sns.boxplot(r2_summary, x = 'View', y = 'R2', ax = ax[0, count], color = organ_colors[organ])
+        sns.boxplot(r2_summary, x = 'Group', y = 'R2', ax = ax[1, count], color = organ_colors[organ])
+
+        for a in ax[:, count]:
+            a.set_xticklabels(a.get_xticklabels(), rotation=90, ha='right')
+
+
+
 
         # Prepare tidy dataframe for plotting downstream.
         plot_df = (
@@ -265,7 +368,10 @@ def main(snakemake) -> None:  # noqa: D401 - Snakemake entrypoint
             "palette": palette,
             "study_order": study_order,
             "study_assoc": study_assoc,
+            "fib_weights" : fib_weights
         }
+
+    fig.savefig(r2plot)
 
     # Scatter plot of the two leading fibrosis-associated factors
     n_organs = len(organs)
@@ -405,6 +511,120 @@ def main(snakemake) -> None:  # noqa: D401 - Snakemake entrypoint
 
     box_fig.savefig(boxplot_output, bbox_inches="tight")
     plt.close(box_fig)
+
+
+
+    # plot correlation of weights
+
+    initial_df = organ_results[list(organ_results.keys())[0]]["fib_weights"]
+    for study in list(organ_results.keys())[1:]:
+        initial_df = pd.merge(initial_df, organ_results[study]["fib_weights"], on = ['gene', 'celltype'], how = 'outer')
+
+    with PdfPages(factor_corr_plot_path) as output_pdf:
+        for ctype in views:
+            test = initial_df[initial_df['celltype'] == ctype]
+            test = test.set_index(['gene'])
+            test = test.loc[:, test.columns!='celltype']
+            union = get_union_of_top_x_genes(test, 300)
+
+            test = test.loc[union, :]
+
+            corr_matrix = test.corr()
+
+            # Create a custom color map for the categories
+            colnames = corr_matrix.columns
+            organs_plot = [i.split('_')[1] for i in colnames]
+            organ_col = [org_color_real[organ] for organ in organs_plot]
+
+
+            # Create heatmaps for positive and negative Jaccard indices
+            fig = plt.figure(figsize=(10, 6), tight_layout = True)
+            g = sns.clustermap(corr_matrix.fillna(0),
+                            # Turn off the clustering
+                            row_cluster=True, col_cluster=True,
+                            row_colors = organ_col, col_colors = organ_col,
+                            linewidths=0, cmap='coolwarm', vmin = -1, vmax = 1, figsize=(6, 6))
+
+            # Move title higher
+            g.fig.suptitle(f"{ctype}", fontsize=20, y=1.05)
+
+            # Reposition colorbar
+            x0, y0, w, h = g.cbar_pos
+            g.ax_cbar.set_position([x0 - 0.1, y0 - 0.3, w / 2, h])
+
+            # Add colorbar title
+            g.ax_cbar.set_title("pears. corr.", pad=10)
+
+            x0, _y0, _w, _h = g.cbar_pos
+            g.ax_cbar.set_position([x0 -0.15,  _y0 - 0.3, _w / 2, _h * 1])
+            plt.tight_layout()
+            output_pdf.savefig(bbox_inches="tight")
+
+
+
+    all_selected = []
+    # plot top genes per factor
+    with PdfPages(topweight_plot_path) as output_pdf:
+        for organ in organs:
+            org_weights = organ_results[organ]['fib_weights']
+
+            n_rows = 5
+            n_cols = 2
+
+
+            fig, axes = plt.subplots(
+                n_rows,
+                n_cols,
+                figsize=(6 * n_cols, 4 * n_rows),
+                squeeze=False
+                )
+
+            for i, celltype in enumerate(views):
+
+                df_ct = org_weights[org_weights['celltype'] == celltype]
+                variables = df_ct.columns[-2:]
+
+                for j, var in enumerate(variables):
+                    ax = axes[i, j]
+                    top5 = df_ct.nlargest(5, var)
+                    bottom5 = df_ct.nsmallest(5, var)
+                    plot_df = (
+                        pd.concat([top5, bottom5])
+                        .drop_duplicates(subset=["gene"])
+                        .sort_values(var)
+                    )
+
+                    # Store selected genes
+                    tmp = plot_df.copy()
+                    tmp["organ"] = organ
+                    tmp["variable"] = var
+                    all_selected.append(tmp)
+
+                    sns.barplot(
+                        data=plot_df,
+                        x=var,
+                        y="gene",
+                        orient="h",
+                        color=organ_colors[organ],
+                        ax=ax
+                    )
+
+                    ax.axvline(0, color="black", linewidth=0.8)
+                    ax.set_xlim(-1.5, 1.5)
+                    ax.set_title(f"{celltype}: \n top/bottom 5 genes")
+                    ax.set_xlabel(var.replace("_", ' '))
+                    ax.set_ylabel("gene")
+            fig.suptitle(f"{organ_names[organ]}", fontsize=24, y=1.0)
+            plt.tight_layout()
+            output_pdf.savefig(bbox_inches="tight")
+    selected_df = pd.concat(all_selected, ignore_index=True)
+
+    selected_df.to_csv(
+        topweight_csv_path,
+        index=False
+    )
+
+
 
 
 if __name__ == "__main__":

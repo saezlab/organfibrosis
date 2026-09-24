@@ -21,8 +21,15 @@ meta_expanded_list = [
     for study in dataset_combinations[organ]['studies_to_analyze']
 ]
 
+extra_comparison_pairs = [
+    ('mesenchymal', 'heart', 'lung'),
+    ('endothelial', 'kidney', 'liver'),
+    ('endothelial', 'lung', 'heart'),
+    ('endothelial', 'liver', 'lung'),
+    ('epithelial', 'lung', 'kidney'),
+]
 
-       
+
 rule input_overlap:
     input:
         models = expand('results/models/{placeholder[0]}/{placeholder[1]}_mofa.hdf5', placeholder = expanded_list),
@@ -45,9 +52,8 @@ rule input_overlap:
         "../envs/scanpy.yaml"
     script:
         "../scripts/plotting/input_overlap.py"
-        
 
-       
+
 rule qc_plots:
     input:
         qc_df = expand('results/preprocessing/qc/{placeholder[0]}/{placeholder[1]}.csv', placeholder = expanded_list),
@@ -81,7 +87,7 @@ rule qc_plots:
         "../envs/scanpy.yaml"
     script:
         "../scripts/plotting/qc_plots.py"
-        
+
 
 rule myofib_identification_plots:
     input:
@@ -91,11 +97,16 @@ rule myofib_identification_plots:
     output:
         stacked_bar = 'plots/analysis/myofib_identification/substate_stacked_bar.pdf',
         umap = expand('plots/analysis/myofib_identification/{organ}_umap.pdf', organ=meta_organs),
+        umap2 = expand('plots/analysis/myofib_identification/{organ}_umap2.pdf', organ=meta_organs),
         proportion = expand('plots/analysis/myofib_identification/{organ}_proportion_stats.pdf', organ=meta_organs),
         top5 = expand('plots/analysis/myofib_identification/{organ}_top5.pdf', organ=meta_organs),
         top5_std = expand('plots/analysis/myofib_identification/{organ}_top5_standard_scale.pdf', organ=meta_organs),
         pan = expand('plots/analysis/myofib_identification/{organ}_pan_markers.pdf', organ=meta_organs),
         pan_std = expand('plots/analysis/myofib_identification/{organ}_pan_markers_standard_scale.pdf', organ=meta_organs),
+        top5_all = expand('plots/analysis/myofib_identification/{organ}_top5_all.pdf', organ=meta_organs),
+        top5_std_all = expand('plots/analysis/myofib_identification/{organ}_top5_standard_scale_all.pdf', organ=meta_organs),
+        pan_all = expand('plots/analysis/myofib_identification/{organ}_pan_markers_all.pdf', organ=meta_organs),
+        pan_std_all = expand('plots/analysis/myofib_identification/{organ}_pan_markers_standard_scale_all.pdf', organ=meta_organs),
     resources:
         runtime=60,
         mem_mb = 120000
@@ -113,7 +124,7 @@ rule plot_scArches:
         query = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/adata.h5ad',
     output:
         confusion_matrix = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/confusion_matrix.pdf',
-        scArches_ecdf = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/scArches_ecdf.pdf',
+        #scArches_ecdf = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/scArches_ecdf.pdf',
         scArches_umap = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/scArches_umap.pdf'
     resources:
         mem_mb = 30000
@@ -121,7 +132,6 @@ rule plot_scArches:
         "../envs/scanpy.yaml"
     script:
         '../scripts/plotting/plot_integration.py'
-
 
 
 rule plot_scDist:
@@ -151,16 +161,22 @@ rule plot_mofa_fibrosis:
     output:
         scatter = 'plots/analysis/interorgan_comparison/mofacell_fibrosis_factor_scatter.pdf',
         boxplot = 'plots/analysis/interorgan_comparison/mofacell_fibrosis_factor_boxplot_study.pdf',
-        r2 = expand('plots/analysis/qc/r2/mofacell_R2_{organ}.csv', organ = meta_organs)
+        r2 = expand('plots/analysis/qc/r2/mofacell_R2_{organ}.csv', organ = meta_organs),
+        r2plot = 'plots/analysis/qc/r2/mofacell_summedR2.pdf',
+        factor_corr_plot_path = 'plots/analysis/qc/r2/mofacell_weights_corr.pdf',
+        topweight_plot_path = 'plots/analysis/qc/r2/top_genes_weights.pdf',
+        topweight_csv_path = 'plots/analysis/qc/r2/top_genes_weights.csv',
+        geneweights = expand("results/models/shared_factor_genes/{organ}_geneweights.csv", organ=meta_organs),
     params:
         organs = meta_organs,
         organ_names = config['general_plotting']['organ_names'],
         organ_colors = config['general_plotting']['organ_colors'],
-        condition_colors = config['general_plotting']['condition_colors']
+        condition_colors = config['general_plotting']['condition_colors'],
+        views = config["general_plotting"]["views"],
     conda:
         "../envs/scanpy.yaml"
     resources:
-        mem_mb = 5000
+        mem_mb = 2000
     script:
         "../scripts/plotting/mofa_plot.py"
 
@@ -180,3 +196,122 @@ rule ccc_dl:
         runtime=60
     script:
         "../scripts/plotting/ccc_dl.py"
+
+
+rule circosplots:
+    input:
+        ccc_results = "results/ccc/on_dl_allorgans.pckl"
+    output:
+        plots = expand(
+            "plots/analysis/ccc/circosplots/{organ}.pdf",
+            organ=meta_organs
+        ),
+        ccc_table = "results/ccc/on_dl_allorgans.csv"
+    params:
+        organs = meta_organs,
+        real_names = config["general_plotting"]["organ_names"],
+        ctype_colors = config["general_plotting"]["celltype_colors_human"],
+        eff_cutoff_pos = 0.5,
+        top_n = 70
+    conda:
+        "../envs/ccc_cell2location.yaml"
+    resources:
+        mem_mb = 5000,
+        runtime = 60
+    script:
+        "../scripts/plotting/circosplots.py"
+
+
+rule fibrosis_scoring:
+    input:
+        ulmest = expand('results/patient_scoring/{placeholder[0]}/{placeholder[1]}_ulmest.csv', placeholder = expanded_list),
+        ulmpval = expand('results/patient_scoring/{placeholder[0]}/{placeholder[1]}_ulmpval.csv', placeholder = expanded_list),
+        geneset = "results/patient_scoring/pat_scoring_geneset.csv"
+    output:
+        sample_counts = 'plots/analysis/fibrosis_scoring/sample_counts.pdf',
+        geneset_boxplots = expand('plots/analysis/fibrosis_scoring/geneset_{gs}_boxplot.pdf',
+                                  gs=['NABA_CORE_MATRISOME', 'HALLMARK_INFLAMMATORY_RESPONSE', 'kidney', 'heart', 'lung', 'liver']),
+        geneset_std_boxplots = expand('plots/analysis/fibrosis_scoring/geneset_{gs}_stdev_boxplot.pdf',
+                                      gs=['NABA_CORE_MATRISOME', 'HALLMARK_INFLAMMATORY_RESPONSE', 'kidney', 'heart', 'lung', 'liver']),
+        scatter_plots = expand('plots/analysis/fibrosis_scoring/{organ}_ecm_scatter.pdf', organ = meta_organs),
+        study_plots = expand('plots/analysis/fibrosis_scoring/{study_name}.pdf',
+                            study_name=['McCown_2025_sn', 'Gribben_2024', 'Wilson_2022', 'Simonson_2023']),
+        combined_boxplot = 'plots/analysis/fibrosis_scoring/combined_organ_boxplot.pdf',
+        study_plots_data ='plots/analysis/fibrosis_scoring/study_fibrosis_score_data.csv',
+        study_plots_pval ='plots/analysis/fibrosis_scoring/study_fibrosis_score_pval.csv'
+    params:
+        organs = meta_organs,
+        organ_colors = config['general_plotting']['organ_colors'],
+        organ_names = config['general_plotting']['organ_names'],
+        condition_colors = config['general_plotting']['condition_colors'],
+        output_dir = 'plots/analysis/fibrosis_scoring'
+    conda:
+        "../envs/scanpy.yaml"
+    resources:
+        mem_mb = 8000,
+        runtime = 60
+    script:
+        "../scripts/plotting/fibrosis_scoring.py"
+
+
+rule pbulk_stats:
+    input:
+        pseudobulks = expand('results/zenodo/pseudobulks/{placeholder[0]}/{placeholder[1]}.h5ad', placeholder = meta_expanded_list)
+    output:
+        pdfs = expand('plots/analysis/pbulkstats/{organ}_pbulk.pdf', organ = meta_organs)
+    conda:
+        "../envs/scanpy.yaml"
+    script:
+        "../scripts/plotting/pbulk_stats.py"
+
+
+rule compare_mofa_lmm:
+    input:
+        dl_results = "results/dl_meta/cross_organ_dl.pckl",
+        mofa_weights = expand(
+            "results/models/shared_factor_genes/{organ}_geneweights.csv",
+            organ=meta_organs
+        )
+    output:
+        scatterplots = "plots/analysis/interorgan_comparison/compare_mofa_lmm/mofa_lmm_scatterplots.pdf",
+        heatmap = "plots/analysis/interorgan_comparison/compare_mofa_lmm/mofa_lmm_correlation_heatmap.pdf",
+        corr_df = "plots/analysis/interorgan_comparison/compare_mofa_lmm/corr_df.csv"
+    params:
+        organs = meta_organs,
+        views = config["general_plotting"]["views"],
+        organ_names = config["general_plotting"]["organ_names"]
+    conda:
+        "../envs/scanpy.yaml"
+    script:
+        "../scripts/plotting/compare_mofa_lmm.py"
+
+
+rule extra_comparisons:
+    input:
+        cross_organ_dl = "results/dl_meta/cross_organ_dl.pckl"
+    output:
+        plots = expand(
+            "plots/analysis/interorgan_comparison/extra_comparisons/{celltype}_{organ1}_{organ2}.pdf",
+            zip,
+            celltype=[comparison[0] for comparison in extra_comparison_pairs],
+            organ1=[comparison[1] for comparison in extra_comparison_pairs],
+            organ2=[comparison[2] for comparison in extra_comparison_pairs]
+        ),
+        data = expand(
+            "plots/analysis/interorgan_comparison/extra_comparisons/{celltype}_{organ1}_{organ2}.csv",
+            zip,
+            celltype=[comparison[0] for comparison in extra_comparison_pairs],
+            organ1=[comparison[1] for comparison in extra_comparison_pairs],
+            organ2=[comparison[2] for comparison in extra_comparison_pairs]
+        )
+    params:
+        comparisons = extra_comparison_pairs,
+        n_top = 10,
+        effect_threshold = 0.5,
+        organs = list(config["general_plotting"]["organ_names"].values()),
+        organ_colors = config["general_plotting"]["organ_colors"],
+        organ_names = config["general_plotting"]["organ_names"]
+    conda:
+        "../envs/scanpy.yaml"
+    script:
+        "../scripts/plotting/extra_comparisons.py"

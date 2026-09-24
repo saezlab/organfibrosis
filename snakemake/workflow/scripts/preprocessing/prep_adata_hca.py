@@ -24,7 +24,7 @@ study_renaming = {
     "Banovich_Kropski_2020":"Habermann_2020",
     "Kaminski_2020":"Adams_2020",
     "Sheppard_2020":"Tsukui_2020",
-    "Schiller_2020":"Strunz_2020",
+    "Schiller_2020":"Mayr_2021",
 }
 
 # Print output file paths for debugging

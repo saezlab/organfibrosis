@@ -21,11 +21,16 @@ scvi_path = str(snakemake.input["scvi"])
 marker_paths = list(map(str, snakemake.input["markers"]))
 stacked_bar_path = str(snakemake.output["stacked_bar"])
 umap_output = dict(zip(organs, map(str, snakemake.output["umap"])))
+umap_output2 = dict(zip(organs, map(str, snakemake.output["umap2"])))
 proportion_output = dict(zip(organs, map(str, snakemake.output["proportion"])))
 top5_output = dict(zip(organs, map(str, snakemake.output["top5"])))
 top5_std_output = dict(zip(organs, map(str, snakemake.output["top5_std"])))
 pan_output = dict(zip(organs, map(str, snakemake.output["pan"])))
 pan_std_output = dict(zip(organs, map(str, snakemake.output["pan_std"])))
+top5_output_all = dict(zip(organs, map(str, snakemake.output["top5_all"])))
+top5_std_output_all = dict(zip(organs, map(str, snakemake.output["top5_std_all"])))
+pan_output_all = dict(zip(organs, map(str, snakemake.output["pan_all"])))
+pan_std_output_all = dict(zip(organs, map(str, snakemake.output["pan_std_all"])))
 marker_files = dict(zip(organs, marker_paths))
 
 # Prepare the destination directories for every PDF figure that will be produced.
@@ -219,23 +224,65 @@ for organ in organs:
     plot = adata[adata.obs['organ'] == organ].copy()
     n_clusters = plot.obs[f'leiden_{resolution}_scvi'].nunique()
     print(n_clusters)
+
     fig = sc.pl.embedding(
             plot,
             basis = 'X_umap_scvi',
-            color = [f'leiden_{resolution}_scvi','substate'], 
+            color = [f'leiden_{resolution}_scvi','substate', 'grouping', 'study', 'cond_test', 'cell_type1', 'cell_type2'],
             #palette = condition_colors,
             show = False,
-            title = [f'leiden clusters', f'cell states'],
+            title = [f'leiden clusters', f'cell states', 'disease etiology','study', 'condition', 'original annotations', 'original annotations'],
             return_fig = True,
             palette = None,
             wspace = 0.2,
+            ncols = 1,
             )
     for ax in fig.axes:
         ax.set_xlabel("UMAP 1") 
         ax.set_ylabel("UMAP 2")  
     fig.suptitle(f"{real_names[organ]}", fontsize=20, y=1.05) 
-    fig.savefig(umap_output[organ])
+    fig.savefig(umap_output[organ], bbox_inches="tight")
     plt.close(fig)
+
+
+for organ in organs:
+    print(organ)
+    resolution = resolutions[organ]
+    plot = adata[adata.obs['organ'] == organ].copy()
+    n_clusters = plot.obs[f'leiden_{resolution}_scvi'].nunique()
+    print(n_clusters)
+
+    if organ == 'HCAlung':
+        groups = ['Myofibroblasts_None', 'Myofibroblasts_Unknown']
+    elif organ == 'reheatHeart':
+        groups = ['Activated_fibroblast_FB-ActFB', 'Activated_fibroblast_FB-X1', 'Activated_fibroblast_FB-TLL2', 'Activated_fibroblast_FB-PTCHD4', 'Activated_fibroblast_FB-ZBTB7C', 'Activated_fibroblast_FB-CNTNAP2']
+    elif organ == 'kidney':
+        groups = ['MYOF', 'cycMYOF']
+    elif organ == 'liver':
+        groups = []
+
+    fig = sc.pl.embedding(
+            plot,
+            basis = 'X_umap_scvi',
+            color = ['cell_type1', 'cell_type2'],
+            #palette = condition_colors,
+            show = False,
+            title = ['original annotations', 'original annotations'],
+            groups = groups,
+            return_fig = True,
+            palette = None,
+            wspace = 0.2,
+            ncols = 1,
+            size = 8
+            )
+    for ax in fig.axes:
+        ax.set_xlabel("UMAP 1")
+        ax.set_ylabel("UMAP 2")
+    fig.suptitle(f"{real_names[organ]}", fontsize=20, y=1.05)
+    fig.savefig(umap_output2[organ], bbox_inches="tight")
+    plt.close(fig)
+
+
 
 
 
@@ -302,18 +349,26 @@ for organ in organs:
 
 
 # Marker gene visualization per organ
-pan_tissue_mf_markers = [
-    "COL1A1",
-    "COL1A2",
-    "COL3A1",
-    "FN1",
-    "TNC",
-    "POSTN",
-    "FAP",
-    "PDGFRA",
-    "SFRP2",
-    "TIMP1"
-]
+pan_tissue_mf_markers = {
+    'myofib' : [
+        "COL1A1",
+        "COL3A1",
+        "POSTN",
+        "CTHRC1",
+        'FN1',
+        'FAP'],
+    'pericyte':[
+        "RGS5",
+        "ABCC9",
+        "NOTCH3",
+        "PDGFRB"],
+    'SMC':[
+        "MYH11",
+        "MYLK",
+        "CNN1",
+        "LMOD1",
+        "SMTN"]
+}
 
 
 
@@ -321,6 +376,9 @@ pan_tissue_mf_markers = [
 # plot top 5 marker genes per organ & common MF markers
 marker_dict = {}
 for organ in organs:
+
+    resolution = resolutions[organ]
+    clustering = f'leiden_{resolution}_scvi'
 
     adata_o = adata[adata.obs['organ'] == organ]
     marker_output = marker_files[organ]
@@ -348,4 +406,24 @@ for organ in organs:
     dotplot_pan = sc.pl.dotplot(adata_o, pan_tissue_mf_markers, groupby="substate", title = real_names[organ], show=False)
     fig_pan = getattr(dotplot_pan, "figure", None) or getattr(dotplot_pan, "fig", None) or plt.gcf()
     fig_pan.savefig(pan_output[organ], bbox_inches='tight')
+    plt.close(fig_pan)
+
+    dotplot_top5_std = sc.pl.dotplot(adata_o, top5, groupby=clustering, standard_scale="var", title = real_names[organ], show=False)
+    fig_top5_std = getattr(dotplot_top5_std, "figure", None) or getattr(dotplot_top5_std, "fig", None) or plt.gcf()
+    fig_top5_std.savefig(top5_std_output_all[organ], bbox_inches='tight')
+    plt.close(fig_top5_std)
+
+    dotplot_top5 = sc.pl.dotplot(adata_o, top5, groupby=clustering, title = real_names[organ], show=False)
+    fig_top5 = getattr(dotplot_top5, "figure", None) or getattr(dotplot_top5, "fig", None) or plt.gcf()
+    fig_top5.savefig(top5_output_all[organ], bbox_inches='tight')
+    plt.close(fig_top5)
+
+    dotplot_pan_std = sc.pl.dotplot(adata_o, pan_tissue_mf_markers, groupby=clustering, standard_scale="var", title = real_names[organ], show=False)
+    fig_pan_std = getattr(dotplot_pan_std, "figure", None) or getattr(dotplot_pan_std, "fig", None) or plt.gcf()
+    fig_pan_std.savefig(pan_std_output_all[organ], bbox_inches='tight')
+    plt.close(fig_pan_std)
+
+    dotplot_pan = sc.pl.dotplot(adata_o, pan_tissue_mf_markers, groupby=clustering, title = real_names[organ], show=False)
+    fig_pan = getattr(dotplot_pan, "figure", None) or getattr(dotplot_pan, "fig", None) or plt.gcf()
+    fig_pan.savefig(pan_output_all[organ], bbox_inches='tight')
     plt.close(fig_pan)

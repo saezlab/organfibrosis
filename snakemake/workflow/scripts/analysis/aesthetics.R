@@ -9,7 +9,7 @@ study_colors <- c("#68affc", "#afe642",
 names(study_colors) <- c("peyser", "schiller", 
                          "xie", "tsukui", 
                          "misharin", 
-                         'Reyfman_2019', 'Habermann_2020','Strunz_2020', 'Adams_2020', 'Tsukui_2020','Gomperts_2021',
+                         'Reyfman_2019', 'Habermann_2020','Mayr_2021', 'Adams_2020', 'Tsukui_2020','Gomperts_2021',
                          'Reichart_2022', 'Simonson_2023', 'Chaffin_2022', 'Koenig_2022','Kuppe_2022',
                          'Lake_2023_sn','Lake_2023_sc','McCown_2025_sn', 'Abedini_2024_sn', 'Abedini_2024_sc','Muto_2022','Li_2024','Wilson_2022',
                          'Guilliams_2022', 'Ramachandran_2019','Gribben_2024', 'Andrews_2024_sc', 'Andrews_2024_sn', "Watson_2025", 'Buonomo_2022')

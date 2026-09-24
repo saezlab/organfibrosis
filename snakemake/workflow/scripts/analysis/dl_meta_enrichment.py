@@ -120,104 +120,234 @@ def plot_dotplot(
     color="FC",
     size="pval_log",
     color_range=(-1.5, 1.5),
-    size_range=(0, 3),
-    size_title="-log10(adj, pval)",
+    size_range=(0, 4),
+    size_title="-log10(adj. pval)",
     color_title="log2(FC)",
-    title=ctype,
+    title=None,
+    x_order=None,
+    sig_threshold=1.301,
 ):
     """
-    This function plot the differential expression results of a list of genes in a certain cell type
-    Input:
-    genes - list of genes
-    df - pandas dataframe with differntial gene expression results
-        example: 	index	study	FC	pval_log
-                0	ABCA3	Misharin_Budinger_2018	0.00000	0.000000
-                1	AC002066.1	Misharin_Budinger_2018	0.000000	0.000000
-    x = x axis column
-    y = y axis columnqq
-    color - column used for color of dots
-    size- column used for size of dots
-    color_range - min and max values of color as tuple
-    size_range - min and max values of size as tuple
+    Plot differential expression results as a dot plot.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing differential expression results.
+
+    x : str
+        Column used for x-axis.
+
+    y : str
+        Column used for y-axis.
+
+    color : str
+        Column used for dot color.
+
+    size : str
+        Column used for dot size.
+
+    color_range : tuple
+        Min/max values for color normalization.
+
+    size_range : tuple
+        Min/max values for size normalization.
+
+    size_title : str
+        Title for size legend.
+
+    color_title : str
+        Title for colorbar.
+
+    title : str
+        Plot title.
+
+    x_order : list or None
+        Optional explicit ordering of x-axis categories.
+
+    sig_threshold : float
+        Threshold above which points receive a black outline.
+        Default: 1.301 (~ -log10(0.05))
     """
-    if df[y].nunique() > 0:
-        fig, ax = plt.subplots(
-            1,
-            figsize=(
-                round(len(df[x].unique()) / 4) + 0.5,
-                (0.1 * len(df[y].unique()) + 1.5),
-            ),
-            tight_layout=True,
+
+    if df[y].nunique() == 0:
+        return None
+
+    df = df.copy()
+
+    if x_order is not None:
+        df[x] = pd.Categorical(
+            df[x],
+            categories=x_order,
+            ordered=True,
         )
 
-        # Scatterplot with limited size range
-        sns.scatterplot(
-            ax=ax,
-            data=df,
-            x=x,
-            y=y,
-            size=size,
-            hue=color,
-            sizes=((size_range[0] * 60) + 20, (size_range[1] * 60) + 20),
-            palette="RdBu_r",
-            size_norm=size_range,
-            hue_norm=color_range,
+    fig, ax = plt.subplots(
+        1,
+        figsize=(
+            round(len(df[x].dropna().unique()) / 4) + 0.5,
+            (0.3 * len(df[y].unique()) + 1),
+        ),
+        tight_layout=True,
+    )
+
+    # Marker size range (points²)
+    marker_sizes = (20, 200)
+
+    sns.scatterplot(
+        ax=ax,
+        data=df,
+        x=x,
+        y=y,
+        size=size,
+        hue=color,
+        sizes=marker_sizes,
+        palette="RdBu_r",
+        size_norm=size_range,
+        hue_norm=color_range,
+        legend=False,
+    )
+
+    # ------------------------------------------------------------------
+    # Add black rings around significant points
+    # ------------------------------------------------------------------
+    min_s, max_s = marker_sizes
+
+    size_norm_obj = plt.Normalize(
+        size_range[0],
+        size_range[1],
+        clip=True,
+    )
+
+    ring_sizes = (
+        min_s
+        + size_norm_obj(df[size])
+        * (max_s - min_s)
+    )
+
+    ring_colors = np.where(
+        df[size] > sig_threshold,
+        "black",
+        "lightgrey",
+    )
+
+    ax.scatter(
+        x=df[x],
+        y=df[y],
+        s=ring_sizes,
+        facecolors="none",
+        edgecolors=ring_colors,
+        linewidths=1.2,
+        zorder=10,
+    )
+
+    # ------------------------------------------------------------------
+    # Axis limits
+    # ------------------------------------------------------------------
+    yrange = [-0.5, df[y].nunique() + 2]
+    ax.set_ylim(yrange)
+
+    xrange = [-1, df[x].nunique()]
+    ax.set_xlim(xrange)
+
+    # ------------------------------------------------------------------
+    # Colorbar
+    # ------------------------------------------------------------------
+    norm = plt.Normalize(
+        color_range[0],
+        color_range[1],
+    )
+
+    sm = plt.cm.ScalarMappable(
+        cmap="RdBu_r",
+        norm=norm,
+    )
+    sm.set_array([])
+
+    fig.subplots_adjust(right=0.95)
+
+    sub_ax = plt.axes([1, 0.35, 0.1, 0.25])
+
+    ax.figure.colorbar(
+        sm,
+        label=color_title,
+        cax=sub_ax,
+    )
+
+    # ------------------------------------------------------------------
+    # Custom size legend
+    # ------------------------------------------------------------------
+    size_norm_obj = plt.Normalize(
+        size_range[0],
+        size_range[1],
+    )
+
+    size_legend_values = np.linspace(
+        size_range[0],
+        size_range[1],
+        num=5,
+    )
+
+    min_s, max_s = marker_sizes
+
+    size_legend_handles = [
+        plt.scatter(
+            [],
+            [],
+            s=min_s + size_norm_obj(v) * (max_s - min_s),
+            color="black",
         )
+        for v in size_legend_values
+    ]
 
-        yrange = [-0.5, df[y].nunique() + 2]
-        ax.set_ylim(yrange)
-        xrange = [-1, df[x].nunique()]
-        ax.set_xlim(xrange)
+    ax.legend(
+        size_legend_handles,
+        [f"{v:.1f}" for v in size_legend_values],
+        loc="center left",
+        bbox_to_anchor=(1.8, 0.5),
+        title=size_title,
+        frameon=False,
+    )
 
-        norm = plt.Normalize(color_range[0], color_range[1])
-        sm = plt.cm.ScalarMappable(cmap="RdBu_r", norm=norm)
-        sm.set_array([])
+    # ------------------------------------------------------------------
+    # Formatting
+    # ------------------------------------------------------------------
+    ax.tick_params(axis="x", labelsize=14)
+    ax.tick_params(axis="y", labelsize=14)
 
-        # Access the legend handles and labels
-        handles, labels = ax.get_legend_handles_labels()
-        # Filter out the handles and labels for the size legend
-        size_legend_handles = [h for i, h in enumerate(handles) if i > 6]
-        # Create a custom size legend
-        size_legend_labels = np.linspace(
-            size_range[0], size_range[1], num=5
-        )  # Specify the desired size values
-        size_legend_handles = [
-            plt.scatter([], [], s=(val * 60) + 20, color="black")
-            for val in size_legend_labels
-        ]
+    ax.set_xticklabels(
+        ax.get_xticklabels(),
+        rotation=45,
+        ha="right",
+        rotation_mode="anchor",
+    )
 
-        ax.legend(
-            size_legend_handles,
-            [f"{val:.1f}" for val in size_legend_labels],
-            loc="center left",
-            bbox_to_anchor=(1.8, 0.5),
-            title=size_title,
-        )
+    ax.set_title(title)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
 
-        # Add colorbar
-        fig.subplots_adjust(right=0.95)  # create space on the right hand side
-        sub_ax = plt.axes([1, 0.35, 0.1, 0.25])  # add a small custom axis
-        ax.figure.colorbar(sm, label=color_title, cax=sub_ax)
-        ax.tick_params(axis="x", labelsize=10)
-        ax.tick_params(axis="y", labelsize=10)
-        labels = ax.get_xticklabels()
+    # ------------------------------------------------------------------
+    # Organ annotation row
+    # ------------------------------------------------------------------
+    labels = ax.get_xticklabels()
 
-        ax.set_xticklabels(labels, rotation=45, ha="right", rotation_mode="anchor")
-        ax.set_title(title)
-        ax.set_xlabel("")
-        ax.set_ylabel("")
+    organ_colors_bar = [
+        org_color_real.get(label.get_text())
+        for label in labels
+    ]
 
-        # Adding organ color bar or markers
-        organ_colors_bar = [org_color_real.get(study.get_text()) for study in labels]
-        y_max = df[y].nunique()
-        ax.scatter(
-            x=np.arange(len(df[x].unique())),
-            y=[y_max + 1] * len(df[x].unique()),
-            c=organ_colors_bar,
-            s=100,
-            marker="s",
-            label="Organ",
-        )
+    y_max = df[y].nunique()
+
+    ax.scatter(
+        x=np.arange(len(labels)),
+        y=[y_max + 1] * len(labels),
+        c=organ_colors_bar,
+        s=100,
+        marker="s",
+        zorder=5,
+    )
+
+    return fig, ax
 
 
 def check_if_gene_everywhere(
@@ -310,7 +440,8 @@ with PdfPages(enrichment_on_dl_path) as output_pdf_organs:
                             ).str.replace(
                             'REGULATION', 'REG.'
                             ).str.lower()
-                    fig = plot_dotplot(subset, x = 'index', y = 'collection', color_range=(-2, 2), color_title='enrichment', title = f'{collection}, in {ctype}')
+                    fig = plot_dotplot(subset, x = 'index', y = 'collection', color_range=(-4, 4), color_title='enrichment',
+                                       title = f'{collection}, in {ctype}', x_order = ['heart', 'lung','kidney', 'liver'])
                     output_pdf_organs.savefig(bbox_inches="tight")
     
     

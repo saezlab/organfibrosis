@@ -195,14 +195,14 @@ rule naba_score:
 
 rule patient_score:
     input:
-        adata = 'results/preprocessing/{organ}/{study}.h5ad'
+        adata = 'results/preprocessing/{organ}/{study}.h5ad',
+        genesets="results/patient_scoring/pat_scoring_geneset.csv"
     output:
         out_path_est = 'results/patient_scoring/{organ}/{study}_ulmest.csv',
         out_path_pval = 'results/patient_scoring/{organ}/{study}_ulmpval.csv',
         pbulk = 'results/patient_scoring/{organ}/{study}_pbulk.csv'
     params:
-        config['preprocessing'].get('pseudobulk'),
-        'data/misc/genesets/patient_scoring_sets.csv'
+        config['preprocessing'].get('pseudobulk')
     resources:
          mem_mb=120000
     conda:
@@ -214,12 +214,12 @@ rule patient_score:
 rule patient_score_part2:
     input:
         out_path_est = expand('results/patient_scoring/{placeholder[0]}/{placeholder[1]}_ulmest.csv', placeholder = expanded_list),
-        out_path_pval = expand('results/patient_scoring/{placeholder[0]}/{placeholder[1]}_ulmpval.csv', placeholder = expanded_list)
+        out_path_pval = expand('results/patient_scoring/{placeholder[0]}/{placeholder[1]}_ulmpval.csv', placeholder = expanded_list),
+        genesets="results/patient_scoring/pat_scoring_geneset.csv"
     output:
         pbulk = 'results/patient_scoring/geneset_scores_full_pbulks.csv'
     params:
-        config['preprocessing'].get('pseudobulk'),
-        'data/misc/genesets/NABA_IMMUNE.csv'
+        config['preprocessing'].get('pseudobulk')
     resources:
          mem_mb=120000
     conda:
@@ -353,3 +353,30 @@ rule dl_enrichment:
         "../envs/scanpy.yaml"
     script:
         "../scripts/analysis/dl_meta_enrichment.py"
+
+rule genesets_patient_scores:
+    input:
+        organ_spec_dl="results/dl_meta/organ_spec_dl.pckl",
+        inflammatory="data/misc/genesets/HALLMARK_INFLAMMATORY_RESPONSE.v2026.1.Hs.gmt",
+        core_matrisome="data/misc/genesets/naba/NABA_CORE_MATRISOME.v2023.2.Hs.gmt",
+        proteoglycans="data/misc/genesets/naba/NABA_PROTEOGLYCANS.v2023.2.Hs.gmt",
+        collagens="data/misc/genesets/naba/NABA_COLLAGENS.v2023.2.Hs.gmt"
+    output:
+        patient_scoring_genesets="results/patient_scoring/pat_scoring_geneset.csv",
+        spatial_genesets="results/patient_scoring/pat_scoring_geneset_slim.csv"
+    params:
+        organs=config["meta_organs"],
+        celltypes=config["general_plotting"]["views"],
+        organ_names=config["general_plotting"]["organ_names"],
+        summary_rows=4,
+        min_studies=3,
+        ci_threshold=0,
+        top_up_per_celltype=200,
+        top_down_per_celltype=100,
+        top_up_per_organ=100,
+        top_down_per_organ=100,
+        core_matrisome_name="NABA_CORE_MATRISOME"
+    conda:
+        "../envs/scanpy.yaml"
+    script:
+        "../scripts/analysis/genesets_patient_scores.py"

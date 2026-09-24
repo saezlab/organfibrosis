@@ -13,13 +13,15 @@ import numpy as np
 adata_path = snakemake.input[0]
 filter_by_expr = snakemake.params[0].get('filter_by_expr')
 filter_by_prop = snakemake.params[0].get('filter_by_prop')
-geneset_path = snakemake.params[1]
+geneset_path = snakemake.input.genesets
 out_path_est = snakemake.output[0]
 out_path_pval = snakemake.output[1]
 pbulk_path = snakemake.output[2]
 
 # Read in anndata object
 adata = sc.read(adata_path)
+# exclude non-anotated cell types
+adata = adata[~adata.obs['annotation_MOFA'].isna()].copy()
 # Extract study name from metadata
 study = adata.obs.iloc[0, :].loc['study']
 # Extract number of cell types per sample
@@ -29,7 +31,6 @@ valid_samples = list(cell_types[cell_types > 2].index)
 # OCEAN data was SoupX corrected, following step cannot handle floats
 if study == 'McCown_2025_sn':
     adata.layers['counts'] = np.round(adata.X)
-
 
 # make pseudobulk of all cells
 full_pb = dc.get_pseudobulk(adata, sample_col='sample', 
@@ -81,7 +82,7 @@ columns = list(set(acts.obs.columns) & set([
     'cond_test', 'Fibrosis', 'eGFR', 'study', 'sex', 'batch', 'tech', 'age',
     'fibrosis score (interstitial fibrosis) in %', 'ischemia time in sec',
     'LVEF', 'BMI', 'Trichrome % fibrotic', 'modality', 'grouping',
-    'region', 'sample'
+    'region', 'sample', 'IFTA', 'clin_global_glomerulosclerosis'
 ]))
 
 # Add metadata to results

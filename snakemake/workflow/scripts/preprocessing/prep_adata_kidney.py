@@ -459,6 +459,7 @@ if study == "McCown_2025_sn":
             "eGFRatBx_NEPTUNE": "eGFR",
             "Project1": "batch",
             "Method": "tech",
+            "InterstitialFibrosis":"Fibrosis"
         }
     )
     # replace string 'N/A' with actual nan values for easier data handeling down the line

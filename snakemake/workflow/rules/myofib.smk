@@ -140,5 +140,7 @@ rule percent_unique:
         output_pdf_comparison = "plots/myofib/percent_unique_comparison.pdf",
         csv_all = "plots/myofib/percent_unique_all.csv",
         csv_myofib = "plots/myofib/percent_unique_diseasefib.csv",
+        csv_gene_lists_all = "plots/myofib/percent_unique_genelists_all.csv",
+        csv_gene_lists_myofib = "plots/myofib/percent_unique_genelists_myofib.csv"
     script:
         "../scripts/myofib/percent_unique.py"

@@ -106,7 +106,7 @@ def plot_forest_plot(
     ax_forest.set_yticks(y_positions)
     ax_forest.set_yticklabels(df.index)
     ax_forest.set_xlabel("effect size")
-    ax_forest.set_title(f"{ctype} cells")
+    #ax_forest.set_title(f"{ctype} cells")
 
     # Invert y-axis so that the first gene is at the top.
     ax_forest.invert_yaxis()
@@ -124,9 +124,9 @@ def plot_forest_plot(
         linecolor="gray",
         annot=True,
         fmt = '.1f',
-        annot_kws={"size": 19},
-        vmax=1.5,
-        vmin=-1.5,
+        annot_kws={"size": 18},
+        vmax=2.5,
+        vmin=-2.5,
         mask=(heat_data == -100),
     )
 

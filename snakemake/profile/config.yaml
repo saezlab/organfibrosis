@@ -3,8 +3,8 @@ workdir: '/mnt/sds-hd/sd22b002/projects/fibrosis_theis_colab'
 scriptdir: 'scripts/snakemake/workflow/scripts'
 datasets:
   HCAlung:
-    studies_ownmodel: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Strunz_2020']
-    studies_to_analyze: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Strunz_2020']
+    studies_ownmodel: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Mayr_2021']
+    studies_to_analyze: ['Reyfman_2019', 'Habermann_2020', 'Adams_2020', 'Tsukui_2020','Mayr_2021']
   reheatHeart:
     studies_ownmodel: ['Reichart_2022', 'Simonson_2023', 'Chaffin_2022', 'Koenig_2022', 'Kuppe_2022']
     studies_to_analyze: ['Reichart_2022', 'Simonson_2023', 'Chaffin_2022', 'Koenig_2022', 'Kuppe_2022']
@@ -55,6 +55,7 @@ datasets:
       "Watson_2025":'data/liver/Watson_2025/samples.csv', 
       'Buonomo_2022':''}  
 meta_organs: ['reheatHeart', 'HCAlung', 'kidney', 'liver']
+real_organs: ['heart', 'lung', 'kidney', 'liver']
 
 general_plotting:
   condition_colors: {
@@ -63,7 +64,7 @@ general_plotting:
       }
   diseasefibs: {'rest':'#801523', 'diseasefibs':'#77B3A5'}
   celltype_colors: {'endothelial':'#8A2E38', 'epithelial':'#EB753E', 'fibroblast':'#002540', 'monomacro':'#B07200', 'myeloid':'#B07200', 'lymphoid':'#4D6504', 'pericytesSMCs':'#44826A', 'other':'#CCD0CC','mesenchymal':'#226F54'}
-  celltype_colors_human: {'endothelial':'#8A2E38', 'fibroblast':'#002540','myeloid':'#B07200', 'lymphoid':'#4D6504', 'pericytesSMCs':'#44826A', 'epithelial':'#EB753E', 'mesenchymal':'#226F54'}
+  celltype_colors_human: {'endothelial':'#8A2E38', 'fibroblast':'#002540','myeloid':'#B07200', 'lymphoid':'#7B913A', 'pericytesSMCs':'#44826A', 'epithelial':'#EB753E', 'mesenchymal':'#226F54'}
   views: ['endothelial', 'lymphoid', 'myeloid', 'mesenchymal', 'epithelial']
   organ_colors: {'HCAlung' : "#74A1C6",'reheatHeart' : "#953E4E",'kidney':'#D0A52E','liver':'#578234'}
   organ_colors_light: {'HCAlung' : "#CDDEFA",'reheatHeart' : "#D8919E",'kidney':'#DFCA8F', 'liver':'#ACE27F'}
@@ -71,7 +72,7 @@ general_plotting:
     "Habermann_2020": "#4597A7",
     "Adams_2020": "#191970",
     "Tsukui_2020": "#0E57A4",
-    "Strunz_2020": "#7446f3",
+    "Mayr_2021": "#7446f3",
     "Reichart_2022": "#8B0000",
     "Simonson_2023": "#F7382B",
     "Chaffin_2022": "#FFA486",
@@ -129,3 +130,298 @@ preprocessing:
 enrichment:
   collectri: 'data/misc/genesets/collectri_20250602_dc_v2_0_2.csv'
   progeny: 'data/misc/genesets/prog_20250602_dc_v2_0_2.csv'
+
+
+spatial_pp:
+  liver_samples:
+    - Visium_C73_A1
+    - Visium_C73_B1
+    - Visium_C73_C1
+    - Visium_C73_D1
+    - Visium_PSC011_A1
+    - Visium_PSC011_B1
+    - Visium_PSC011_C1
+    - Visium_PSC011_D1
+  prepare_refs:
+    input:
+      liver_raw: data/liver/Andrews_2024/rawsnsc
+      liver_normalized: data/liver/Andrews_2024/Andrews_sc.h5ad
+      liver_visium_raw:
+        - data/liver/Andrews_2024/rawspatial/GSM7697868_C73A1
+        - data/liver/Andrews_2024/rawspatial/GSM7697869_C73B1
+        - data/liver/Andrews_2024/rawspatial/GSM7697870_C73C1
+        - data/liver/Andrews_2024/rawspatial/GSM7697871_C73D1
+        - data/liver/Andrews_2024/rawspatial/GSM7845914_PSC011_A1_VISIUM
+        - data/liver/Andrews_2024/rawspatial/GSM7845915_PSC011_B1_VISIUM
+        - data/liver/Andrews_2024/rawspatial/GSM7845916_PSC011_C1_VISIUM
+        - data/liver/Andrews_2024/rawspatial/GSM7845917_PSC011_D1_VISIUM
+      liver_visium_normalized:
+        - data/liver/Andrews_2024/Visium_C73_A1.h5ad
+        - data/liver/Andrews_2024/Visium_C73_B1.h5ad
+        - data/liver/Andrews_2024/Visium_C73_C1.h5ad
+        - data/liver/Andrews_2024/Visium_C73_D1.h5ad
+        - data/liver/Andrews_2024/Visium_PSC011_A1.h5ad
+        - data/liver/Andrews_2024/Visium_PSC011_B1.h5ad
+        - data/liver/Andrews_2024/Visium_PSC011_C1.h5ad
+        - data/liver/Andrews_2024/Visium_PSC011_D1.h5ad
+      lung_atlas: data/HCAlung/spatial/atlas_full.h5ad
+      heart_atlas: ../KuppeRamirezLi_MI/snuc/hca_rnasamples.h5ad
+      kidney_atlas: data/kidney/kpmp_v15_sc.h5ad
+    output:
+      liver_reference: results/spatial_deconv/preped_objects/liver.h5ad
+      lung_reference: results/spatial_deconv/preped_objects/lung.h5ad
+      heart_reference: results/spatial_deconv/preped_objects/heart.h5ad
+      kidney_reference: results/spatial_deconv/preped_objects/kidney.h5ad
+      liver_spatial:
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_C73_A1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_C73_B1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_C73_C1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_C73_D1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_PSC011_A1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_PSC011_B1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_PSC011_C1.h5ad
+        - results/spatial_deconv/preped_objects/liver_visium_Visium_PSC011_D1.h5ad
+    params:
+      liver_exclude_patterns:
+        - _SN_
+        - _flush_
+      visium_min_genes: 400
+      visium_min_cells: 5
+      reference_min_genes: 200
+      reference_min_counts: 500
+      reference_max_counts: 40000
+      reference_min_cells: 3
+      heart_mt_cutoff: 25
+      kidney_mt_cutoff: 35
+      liver_control_condition: normal
+      lung_control_condition: Control
+      kidney_control_condition: normal
+      heart_control_region: CTRL
+      heart_exclude_regions:
+        - BZ
+        - RZ
+        - IZ
+      liver_mesenchymal_types:
+        - fibroblast
+        - hepatic stellate cell
+      liver_myeloid_types:
+        - macrophage
+        - Kupffer cell
+        - neutrophil
+        - conventional dendritic cell
+        - monocyte
+        - plasmacytoid dendritic cell
+        - erythrocyte
+        - mast cell
+      liver_lymphoid_types:
+        - hepatic pit cell
+        - CD8-positive, alpha-beta T cell
+        - CD4-positive, alpha-beta T cell
+        - natural killer cell
+        - T cell
+        - plasma cell
+        - mature B cell
+      liver_endothelial_types:
+        - endothelial cell of pericentral hepatic sinusoid
+        - endothelial cell of artery
+        - endothelial cell of periportal hepatic sinusoid
+        - vein endothelial cell
+      liver_epithelial_types:
+        - centrilobular region hepatocyte
+        - midzonal region hepatocyte
+        - periportal region hepatocyte
+        - intrahepatic cholangiocyte
+        - hepatocyte
+      lung_mesenchymal_types:
+        - Smooth Muscle
+        - Alveolar fibroblast
+        - Pericyte
+        - Adventital fibroblast
+        - Myofibroblast
+      lung_myeloid_types:
+        - Macrophage FABP4+
+        - Macrophage
+        - Monocyte
+        - Dendritic
+        - Basophil/Mast
+        - pDC
+      lung_lymphoid_types:
+        - T cell
+        - NK
+        - B/Plasma
+      lung_endothelial_types:
+        - Artery
+        - Capillary
+        - Vein
+        - Lymphatic
+        - Bronchial Vessel
+        - Capillary Aerocyte
+      lung_epithelial_types:
+        - Ciliated
+        - AT2
+        - Ionocyte
+        - Mucous
+        - AT1
+        - Club
+        - Ciliated & Club
+        - Basal
+        - Club & AT1
+        - Aberrant basaloid
+        - Mesothelial
+      lung_conditions:
+        - Control
+        - IPF
+      heart_pericyte_types:
+        - vSMCs
+        - PC
+      heart_myeloid_types:
+        - Myeloid
+        - Mast
+      heart_mesenchymal_types:
+        - pericytesSMCs
+        - fibroblast
+      kidney_conditions:
+        - chronic kidney disease
+        - normal
+      kidney_fibroblast_types:
+        - MYOF
+        - aFIB
+        - FIB
+        - dFIB
+      kidney_pericyte_types:
+        - VSMC
+        - MC
+        - REN
+        - VSMC/P
+        - dVSMC
+      kidney_lymphoid_types:
+        - T
+        - B
+      kidney_epithelial_types:
+        - PC
+        - DTL/ATL
+        - TAL
+        - IC
+        - PT
+        - DCT/CNT
+        - POD/PEC
+      kidney_mesenchymal_types:
+        - pericytesSMCs
+        - fibroblast
+      heart_fibroblast_pattern: Fib
+      heart_lymphoid_pattern: Lymphoid
+      heart_endothelial_pattern: Endo
+      kidney_endothelial_type: EC
+      kidney_myeloid_type: MYL
+  dot:
+    input:
+      lung_spatial: data/HCAlung/spatial/adata_vis_human_spatial_paper.h5ad
+      kidney_spatial: data/kidney/visium.h5ad
+      heart_metadata: ../KuppeRamirezLi_MI/visium/visium_meta.csv
+      heart_slides: ../KuppeRamirezLi_MI/visium/visium_data_py
+    output:
+      lung_h5ads: results/spatial_deconv/dot/lung/deconv_h5ad
+      lung_weights: results/spatial_deconv/dot/lung/weights
+      lung_maps: results/spatial_deconv/dot/lung/maps
+      lung_checkpoints: results/spatial_deconv/dot/lung/checkpoints
+      heart_h5ads: results/spatial_deconv/dot/heart/deconv_h5ad
+      heart_weights: results/spatial_deconv/dot/heart/weights
+      heart_maps: results/spatial_deconv/dot/heart/maps
+      heart_checkpoints: results/spatial_deconv/dot/heart/checkpoints
+      kidney_h5ads: results/spatial_deconv/dot/kidney/deconv_h5ad
+      kidney_weights: results/spatial_deconv/dot/kidney/weights
+      kidney_maps: results/spatial_deconv/dot/kidney/maps
+      kidney_checkpoints: results/spatial_deconv/dot/kidney/checkpoints
+      liver_h5ads: results/spatial_deconv/dot/liver/deconv_h5ad
+      liver_weights: results/spatial_deconv/dot/liver/weights
+      liver_maps: results/spatial_deconv/dot/liver/maps
+      liver_checkpoints: results/spatial_deconv/dot/liver/checkpoints
+    params:
+      # Avoid the Numba/TBB shutdown hang; requires an OpenMP runtime.
+      numba_threading_layer: omp
+      device: cuda
+      batch_size: 1000
+      mode: lowres
+      max_spot_size: 20
+      ratios_weight: 0.3
+      iterations: 2000
+      checkpoint_freq: 400
+      plot_ncols: 6
+      verbose: true
+      cell_type_key: annotation_MOFA
+      subcluster_size: 10
+      max_genes: 5000
+      reference_seed: 42
+      remove_mt: true
+      spatial_key: spatial
+      th_spatial: 0.84
+      n_niches: 5
+      niche_n_init: 20
+      niche_seed: 0
+      condition_map:
+        primary sclerosing cholangitis: fibrosis
+        CKD: fibrosis
+        FZ: fibrosis
+        IPF: fibrosis
+        CTRL: control
+        Healthy: control
+        normal: control
+      heart_regions:
+        - FZ
+        - CTRL
+      kidney_conditions:
+        - Living Donor Healthy Reference Tissue (KPMP)
+        - Reference Tissue (Unknown Clinical Status)
+        - Healthy Reference Tissue
+        - Diabetes Mellitus - Resilient
+        - Hypertensive Chronic Kidney Disease
+        - Diabetic Kidney Disease
+      kidney_control_conditions:
+        - Living Donor Healthy Reference Tissue (KPMP)
+        - Reference Tissue (Unknown Clinical Status)
+        - Healthy Reference Tissue
+        - Diabetes Mellitus - Resilient
+      kidney_exclude_samples:
+        - V12D05-071_XY01_Ref
+        - V12D05-071_XY02_K21-00202-1
+        - V12D05-072_XY01_K21-198-3-C
+        - V12D05-072_XY02_K21-198-3-CM
+        - V12D05-072_XY03_K21-198-3-M
+        - V12D05-072_XY04_K22-265-5
+        - V12D05-074_XY04_Ref
+        - V12N14-057_XY01_Ref
+        - V12N14-082_XY03_Ref
+        - V12N14-084_XY01_K21-139-1-1
+        - V12N14-084_XY02_K21-139-1-2
+        - V12N16-374_XY01_Ref
+        - V12U06-350_XY03_Ref
+        - V12U21-008_XY03_K21-272-2
+        - V12U21-008_XY03_Ref
+        - V12U21-008_XY04_K21-272-3
+        - V12U21-009_XY01_Ref
+        - V12U21-009_XY04_K22-175-5
+        - V12U21-010_XY01_Ref
+        - V13F08-024_XY02_Ref-flip
+        - V13F08-026_XY04_Ref
+        - V13J17-332_XY02_Ref
+        - V13M27-060_XY04_Ref
+        - V13Y22-308_XY01_23-0156
+        - V13Y22-309_XY04_Ref
+        - V19S25-016_XY01_18-0006
+        - V19S25-019_XY02_M32
+        - V19S25-019_XY03_M61
+        - V19S25-019_XY04_F52
+        - V52L26-067_XY01_K21-198-3
+        - V52L26-067_XY02_K21-273-3
+        - V53M20-051_XY01_K22-284-1
+        - V53M20-103_XY01_K22-400-1
+      keep_obs:
+        - niche
+        - cond_test
+        - sample
+        - endothelial
+        - lymphoid
+        - mesenchymal
+        - myeloid
+        - epithelial
+        - other

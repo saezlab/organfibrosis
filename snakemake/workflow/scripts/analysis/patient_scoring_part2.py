@@ -9,7 +9,7 @@ import pandas as pd
 est_path = snakemake.input['out_path_est']
 pval_path = snakemake.input['out_path_pval']
 save_results_path = snakemake.output[0]
-patient_scoring_sets = snakemake.params[1]
+patient_scoring_sets = snakemake.input.genesets
 
 full_genesets = pd.read_csv(patient_scoring_sets, index_col = 0)
 all_sets = list(full_genesets['geneset'].unique())
@@ -82,13 +82,13 @@ for col in all_sets:
 # Default to 'none' if not assigned
 
 to_save_patients = merged_df
-to_save_patients['immune'] = 'none'
-to_save_patients.loc[to_save_patients['GOBP_IMMUNE_RESPONSE_stdev'] >= 1, 'immune'] = 'high'
-to_save_patients.loc[to_save_patients['GOBP_IMMUNE_RESPONSE_stdev'] < 1, 'immune'] = 'low'
+#to_save_patients['immune'] = 'none'
+#to_save_patients.loc[to_save_patients['GOBP_IMMUNE_RESPONSE_stdev'] >= 1, 'immune'] = 'high'
+#to_save_patients.loc[to_save_patients['GOBP_IMMUNE_RESPONSE_stdev'] < 1, 'immune'] = 'low'
 
-to_save_patients['ecm'] = 'none'
-to_save_patients.loc[to_save_patients['NABA_CORE_MATRISOME_stdev'] >= 1, 'ecm'] = 'high'
-to_save_patients.loc[to_save_patients['NABA_CORE_MATRISOME_stdev'] < 1, 'ecm'] = 'low'
+#to_save_patients['ecm'] = 'none'
+#to_save_patients.loc[to_save_patients['NABA_CORE_MATRISOME_stdev'] >= 1, 'ecm'] = 'high'
+#to_save_patients.loc[to_save_patients['NABA_CORE_MATRISOME_stdev'] < 1, 'ecm'] = 'low'
 
 # Save the final patient-level results to CSV
 

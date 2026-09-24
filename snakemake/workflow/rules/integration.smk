@@ -37,7 +37,7 @@ rule scArches:
         ref_model = 'results/integration/{organ}/scanvi_model/model.pt',
         query_data = 'data/{organ}/{study}_pp.h5ad'
     output:
-        #adata = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/adata.h5ad',
+        adata = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/adata.h5ad',
         model = 'results/integration/{organ}/post_label_transfer/{study}_scarches_model/model.pt',
     resources:
         mem_mb = 20000,

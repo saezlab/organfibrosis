@@ -1,0 +1,35 @@
+channels: # https://mamba.readthedocs.io/en/latest/user_guide/troubleshooting.html#using-the-defaults-channels
+  - conda-forge
+dependencies:
+  - conda-forge::python==3.12
+  - conda-forge::ipykernel # for jupyter notebooks
+  - conda-forge::requests==2.32.4
+  - conda-forge::scanpy==1.11.3
+  - conda-forge::numpy==2.2.6
+  - conda-forge::numba==0.61.2
+  - conda-forge::scipy==1.15.0
+  - conda-forge::pandas==2.3.1
+  - conda-forge::matplotlib==3.10.3
+  - conda-forge::plotnine==0.14.5
+  - conda-forge::scikit-learn==1.7.0
+  - conda-forge::optuna==4.4.0
+  - conda-forge::pre_commit==4.2.0
+  - conda-forge::ruff==0.12.3
+  - conda-forge::mypy==1.17.0
+  - conda-forge::plotly==6.2.0
+  - conda-forge::marimo==0.14.11
+  - bioconda::pydeseq2==0.5.2
+  - conda-forge::pydantic==2.11.7
+  - conda-forge::polars-u64-idx
+  - conda-forge::leidenalg==0.12.0
+  - conda-forge::python-igraph==1.0.0
+  - pip
+  - pip:
+    - decoupler==2.1.4
+    - pypath-omnipath==0.16.20
+    - pybiomart==0.2.0
+    - nichenetpy==1.0.1
+    - cell2location==0.1.5
+    - git+https://github.com/earmingol/DOTpy.git@a29e93c
+    - harmonypy==2.0.0
+

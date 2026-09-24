@@ -18,10 +18,15 @@ query_path = snakemake.input["query"]
 wildcards = snakemake.wildcards
 
 confusion_matrix = snakemake.output["confusion_matrix"]
-scArches_ecdf = snakemake.output["scArches_ecdf"]
+#scArches_ecdf = snakemake.output["scArches_ecdf"]
 scArches_umap = snakemake.output["scArches_umap"]
 
-original_label = "cell_type1"
+if snakemake.wildcards['study'] == 'Wilson_2022':
+    original_label = "author_cell_type"
+elif snakemake.wildcards['study'] == 'Muto_2022':
+    original_label = "celltype"
+
+reference_broad = 'cell_type1'
 original_sublabel = "label_before"
 reference_sublabel = "cell_type2"
 label = "cell_type1_pred"
@@ -29,42 +34,40 @@ sub_label = "cell_type2_pred"
 
 
 def plot_confusion_matrix(df):
-    col_norm_df = df.div(
-        df.sum(axis=0), axis=1
-    ).fillna(
-        0
-    )  # normalize by column (percentage of old labels in new labels, i.e. columns sum to 1)
-    row_norm_df = df.div(df.sum(axis=1), axis=0).fillna(
-        0
-    )  # normalize by row (percentage of new labels in old labels, i.e. rows sum to 1)
-
-    # number of cells with original annotations
-    orig_ha = pch.HeatmapAnnotation(
-        Orig_labels=pch.anno_barplot(df.sum(axis=1)),
-        legend=False,
-        axis=0,
-        label_side="bottom",
-        label_kws={
-            "rotation": -30,
-            "horizontalalignment": "left",
-            "verticalalignment": "top",
-        },
-    )
-
-    # number of cells with predicted annotations
-    pred_ha = pch.HeatmapAnnotation(
-        Predicted=pch.anno_barplot(df.sum(axis=0)), legend=False, label_side="left"
-    )
+    col_norm_df = df.div(df.sum(axis=0), axis=1).fillna(0)
+    row_norm_df = df.div(df.sum(axis=1), axis=0).fillna(0)
 
     titles = [
         "Origin of cells in predicted labels",
         "Destination of cells from original labels",
     ]
 
+    figures = []
+
     for norm_df, title in zip([col_norm_df, row_norm_df], titles):
-        # plot heatmap
-        f = plt.figure(figsize=(8, 7), dpi=300)
-        plt.suptitle(title)
+
+        # Create annotations inside the loop to avoid layout reuse issues
+        orig_ha = pch.HeatmapAnnotation(
+            Orig_labels=pch.anno_barplot(df.sum(axis=1)),
+            legend=False,
+            axis=0,
+            label_side="bottom",
+            label_kws={
+                "rotation": -30,
+                "horizontalalignment": "left",
+                "verticalalignment": "top",
+            },
+        )
+
+        pred_ha = pch.HeatmapAnnotation(
+            Predicted=pch.anno_barplot(df.sum(axis=0)),
+            legend=False,
+            label_side="left",
+        )
+
+        # Make figure larger and do NOT use tight_layout=True here
+        f = plt.figure(figsize=(10, 9), dpi=300)
+
         cm = pch.ClusterMapPlotter(
             data=norm_df,
             top_annotation=pred_ha,
@@ -83,7 +86,20 @@ def plot_confusion_matrix(df):
             plot=True,
             edgecolors="black",
         )
-        return f
+
+        f.suptitle(title, y=0.98)
+
+        # Manually leave room for bottom x labels
+        f.subplots_adjust(
+            bottom=0.28,
+            top=0.90,
+            left=0.18,
+            right=0.88,
+        )
+
+        figures.append(f)
+
+    return figures
 
 
 def pref_ecdf(data, wildcards):
@@ -138,9 +154,9 @@ adata_full = sc.concat(
 
 # map sub cell types to main cell type
 cell_type_unique_dict = (
-    ref.obs[[original_label, reference_sublabel]]
+    ref.obs[[reference_broad, reference_sublabel]]
     .drop_duplicates()
-    .groupby(original_label)[reference_sublabel]
+    .groupby(reference_broad)[reference_sublabel]
     .apply(list)
     .to_dict()
 )
@@ -160,11 +176,11 @@ query.obsm["X_umap_scANVI"] = adata_full[
 ref.obsm["X_umap_scANVI"] = adata_full[adata_full.obs["dataset"] == "reference"][
     ref.obs.index, :
 ].obsm["X_umap_scANVI"]
-soft_adata = dc.get_acts(query, obsm_key="scArches_soft_" + sub_label)
+#soft_adata = dc.get_acts(query, obsm_key="scArches_soft_" + sub_label)
 
 # Plot embeddings
 datasets = {"query": wildcards["study"], "ref": "reference"}
-meta_column = {"reference": reference_sublabel, wildcards["study"]: sub_label}
+meta_column = {"reference": reference_broad, wildcards["study"]: label}
 titles = {
     "reference": "Labels from" + "reference",
     wildcards["study"]: "Predictions" + "for " + wildcards["study"],
@@ -198,7 +214,7 @@ axes[1].set_title("Predictions for " + wildcards["study"])
 
 plt.savefig(scArches_umap, dpi=300)
 
-
+'''
 # get prediction scores
 soft = pd.concat(
     [
@@ -218,7 +234,7 @@ long_soft = pd.melt(
 
 
 p9.save_as_pdf_pages(soft_ecdf(long_soft, wildcards), scArches_ecdf)
-
+'''
 
 # Plot confusion matrix
 
@@ -234,5 +250,8 @@ with PdfPages(confusion_matrix) as pdf:
         # compute confusion matrix between old and new labels
         df = query.obs.groupby(combination).size().unstack(fill_value=0)
 
-        f = plot_confusion_matrix(df)
-        pdf.savefig(f)
+        figures = plot_confusion_matrix(df)
+
+        for f in figures:
+            pdf.savefig(f, bbox_inches="tight")
+            plt.close(f)

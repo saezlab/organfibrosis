@@ -133,9 +133,9 @@ def plot_forest_plot(
         linecolor="gray",
         annot=True,
         fmt = '.1f',
-        annot_kws={"size": 19},
-        vmax=1,
-        vmin=-1,
+        annot_kws={"size": 18},
+        vmax=1.5,
+        vmin=-1.5,
         mask=(heat_data == -100),
     )
 

@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 
 wildcard_constraints:
     organ='[a-zA-Z]+'
@@ -24,6 +25,23 @@ for key, items in dataset_combinations.items():
 all_human_studies = all_studies[all_studies['organ'].isin(human_studies)]
 
 organs = all_studies['organ'].unique()
+
+# Files to be exported to Zenodo as CSV (one CSV per input)
+zenodo_inputs = [
+    "results/resource_website/co_data.pckl",
+    "results/resource_website/difib_co_data.pckl",
+    "results/resource_website/spatial_data.pckl",
+    "results/resource_website/difib_deg_data.parquet",
+    "results/resource_website/deg_data.parquet",
+    "results/resource_website/enrich_collectri.pckl",
+    "results/resource_website/enrich_difib_collectri.pckl",
+    "results/resource_website/ccc_colocalization.pckl",
+    "results/ccc/on_dl_allorgans.pckl"
+]
+
+zenodo_outputs = [
+    f"results/zenodo/{Path(src).stem}.csv" for src in zenodo_inputs
+]
 
 rule filter_co:
     input:
@@ -152,3 +170,34 @@ rule merge_colocalization:
         runtime=60
     script:
         "../scripts/dataformat/merge_colocalization_data.py"
+
+
+rule export_to_csv:
+    input:
+        zenodo_inputs
+    output:
+        zenodo_outputs
+    conda:
+        "../envs/parquet.yaml"
+    resources:
+        runtime=30
+    script:
+        "../scripts/dataformat/files_to_csv.py"
+
+
+
+rule save_pseudobulks:
+    input:
+        pbulk = 'results/mofa_input/{organ}/pbulk/{study}.csv',
+        meta = 'results/mofa_input/{organ}/coldata/{study}.csv',
+    output:
+        deg_file = 'results/zenodo/pseudobulks/{organ}/{study}.h5ad'
+    params:
+        config['preprocessing'].get('pseudobulk')
+    conda:
+        "../envs/scanpy.yaml"
+    resources:
+        runtime=60,
+        mem_mb=20000
+    script:
+        "../scripts/dataformat/save_pseudobulks.py"

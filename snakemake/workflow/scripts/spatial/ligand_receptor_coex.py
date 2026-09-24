@@ -1,7 +1,7 @@
 
 import json
 from collections.abc import Mapping
-from itertools import product
+from itertools import count, product
 from math import ceil
 from pathlib import Path
 
@@ -327,7 +327,7 @@ if top_genes:
             heatmap_export_df = plot_data.copy()
             g = sns.clustermap(
                 plot_data,
-                figsize = (7,20),
+                figsize = (7,18),
                 vmin=0,
                 vmax=1,
                 cmap="plasma",
@@ -450,7 +450,7 @@ if top_genes:
         for idx, organ in enumerate(organs):
             ax = axs[idx // ncols][idx % ncols]
             data = cosine_sim_full_dict.get(organ, pd.DataFrame())
-            data = data[data["interaction"].isin(top_genes)].sort_values(by="interaction")
+            data = data[data["interaction"].isin(top_genes[-15:])].sort_values(by="interaction")
             if data.empty:
                 ax.axis("off")
                 ax.text(0.5, 0.5, f"No data for {real_names[organ]}", ha="center", va="center")
@@ -462,22 +462,33 @@ if top_genes:
             top_genes_boxplot_frames.append(export_df)
             sns.boxplot(
                 data=data,
-                x="interaction",
-                y="mean",
-                hue="cond_test",
-                hue_order=["control", "fibrosis"],
-                width=0.8,
+                x='interaction',
+                y='mean',
+                hue='cond_test',
+                width=0.75,
+                gap=0.15,
                 ax=ax,
-                palette=palette,
+                hue_order=['control', 'fibrosis'],
+                palette={'control': '#f2f2f2', 'fibrosis': org_colors[organ]},
+                linewidth=1.2,
+                fliersize=2
             )
-            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
-            ax.set_ylabel("mean cosine similarity")
-            ax.set_xlabel("")
-            ax.set_title(real_names[organ])
-            ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
 
+            interactions = data['interaction'].unique()
+
+            for i in range(len(interactions)):
+                if i % 2 == 0:
+                    ax.axvspan(i - 0.5, i + 0.5, color='gray', alpha=0.07, zorder=0)
+
+            for x in range(len(interactions) + 1):
+                ax.axvline(x - 0.5, color='lightgray', lw=0.6, zorder=0)
+
+            ax.set_xlim(-0.5, len(interactions) - 0.5)
+            ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+            ax.set_ylabel('mean cosine \n similarity')
+            ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
             organ_stats = significance_dict.get(organ, {}) if significance_dict else {}
-            interactions = data["interaction"].unique()
+
             for i, interaction in enumerate(interactions):
                 stats = organ_stats.get(interaction, {})
                 pval = stats.get("corrected_p") if stats else None

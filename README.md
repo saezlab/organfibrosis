@@ -13,6 +13,8 @@ Through systematic comparison of these datasets, we identified organ-specific as
 ## 💻 Code overview
 The code in structured into a snakamake pipeline. Configurations are found in the `/profile` directory. Snakemake rules, envrionments and analysis code is found in the `/workflow` directory. 
 
+The current code contains updates from the revision process. For the code for the preprint, have a look at commit 3096989.
+
 The code was modulatized into the following modules:
 
 - preprocessing  
@@ -23,8 +25,11 @@ The code was modulatized into the following modules:
     - GPU-dependent steps (for cluster configurations, see `/profile/slurm2` - contains cell type annotation transfer and mesenchymal cell integration  
 - myofib  
      - processing & analysis of disease fibroblast subset of the data
+- spatial_pp
+     - preprocessing and deconvolution of spatial data and deconvolution data
+     - GPU dependent (for cluster configurations, see `/profile/slurm2` - contains cell type annotation transfer and mesenchymal cell integration)
 - spatial
-     - preprocessing & analysis of spatial datasets
+     - analysis of spatial datasets
 - plotting
      - final processing and visualization of data
 - dataformat

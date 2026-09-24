@@ -44,12 +44,28 @@ rule all:
         "results/resource_website/ccc_interactions.pckl",
         "results/resource_website/deg_data.parquet",
         "plots/spatial/ligand_receptor_coex/top_genes_heatmap.pdf",
+        "results/spatial/cosine_sim/heart_geneset_all.csv",
         "plots/analysis/ccc/ccc_dl_overview.pdf",
+        "plots/spatial/ecm_enrich/top_genes_heatmap_spatial_diseasefibs.csv",
         "results/resource_website/enrich_collectri.pckl",
         "results/resource_website/enrich_difib_collectri.pckl",
         "results/resource_website/difib_deg_data.parquet",
         "results/resource_website/ccc_colocalization.pckl",
+        'plots/analysis/fibrosis_scoring/combined_organ_boxplot.pdf',
+        'plots/analysis/interorgan_comparison/extra_comparisons/mesenchymal_heart_lung.csv',
+        'plots/spatial/niche_analysis_plots/niche_composition_fraction.pdf',
+        'results/zenodo/co_data.csv',
         'results/dl_meta/organ_spec_top10_upregulated_allorgans.csv',
+        'results/integration/kidney/post_label_transfer/Muto_2022_scarches_model/confusion_matrix.pdf',
+        'results/integration/kidney/post_label_transfer/Wilson_2022_scarches_model/confusion_matrix.pdf',
+        expand('results/zenodo/pseudobulks/HCAlung/{study}.h5ad', study = studies1),
+        expand('results/zenodo/pseudobulks/reheatHeart/{study}.h5ad', study = studies2),
+        expand('results/zenodo/pseudobulks/kidney/{study}.h5ad', study = studies3),
+        expand('results/zenodo/pseudobulks/liver/{study}.h5ad', study = studies4),
+        expand('plots/analysis/pbulkstats/{organ}_pbulk.pdf', organ = organ),
+        "plots/analysis/interorgan_comparison/compare_mofa_lmm/corr_df.csv",
+        "plots/analysis/ccc/circosplots/kidney.pdf",
+        "plots/spatial/fibrosis_border_analysis/kidney_profiles_microns.pdf",
         # for scvi integration
         'results/integration/fibroblasts/integrated_latent_space.csv',
         # after integration 
@@ -95,3 +111,8 @@ module dataformat:
     snakefile: 'rules/dataformat.smk'
     config: config
 use rule * from dataformat as DF_*
+
+module spatial_pp:
+    snakefile: 'rules/spatial_pp.smk'
+    config: config
+use rule * from spatial_pp as SPP_*

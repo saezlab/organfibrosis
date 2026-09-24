@@ -78,10 +78,28 @@ def get_percentage_unique(upset_df, organs, real_names):
         percentages[real_names[organ]] = round(percentage, 2)
     return percentages
 
+def gene_dict_to_long_df(gene_dict, direction, real_names):
+    rows = []
+
+    for ctype, organ_dict in gene_dict.items():
+        for organ, genes in organ_dict.items():
+            for gene in genes:
+                rows.append(
+                    {
+                        "ctype": ctype,
+                        "organ": real_names[organ],
+                        "direction": direction,
+                        "gene": gene,
+                    }
+                )
+
+    return pd.DataFrame(rows)
+
 
 # Run both scenarios: 'all' and 'myofib'
 results_scenarios = ["all", "myofib"]
 percentage_unique_results = {}
+gene_list_results = []
 for results in results_scenarios:
     gene_dict_up = {}
     gene_dict_down = {}
@@ -111,6 +129,40 @@ for results in results_scenarios:
                 gene_dict_up,
                 gene_dict_down,
             )
+
+    # Save gene lists for this scenario
+    gene_lists_up = gene_dict_to_long_df(
+        gene_dict_up,
+        "up",
+        real_names,
+    )
+
+    gene_lists_down = gene_dict_to_long_df(
+        gene_dict_down,
+        "down",
+        real_names,
+    )
+
+    gene_lists = pd.concat(
+        [gene_lists_up, gene_lists_down],
+        ignore_index=True,
+    )
+
+    if results == "all":
+        gene_lists = gene_lists[gene_lists['ctype'] == 'mesenchymal']
+        gene_lists.to_csv(
+            snakemake.output["csv_gene_lists_all"],
+            index=False,
+        )
+
+    elif results == "myofib":
+        gene_lists.to_csv(
+            snakemake.output["csv_gene_lists_myofib"],
+            index=False,
+        )
+
+
+
     percentage_unique = {}
     for ctype in gene_dict_up.keys():
         percentage_unique[ctype] = {}
@@ -135,6 +187,8 @@ myofib_summ = pd.concat(
     ],
     keys=percentage_unique_results["myofib"].keys(),
 ).reset_index()
+
+
 
 # Plot and save as PDF
 fig, ax = plt.subplots(2, tight_layout=True, sharex=True, figsize=(7, 7))

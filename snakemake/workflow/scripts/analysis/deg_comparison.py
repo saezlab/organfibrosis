@@ -586,7 +586,7 @@ for count, ctype in enumerate(views):
     ax[count].set_title(ctype)
 ax[-1].legend(bbox_to_anchor=(1, 1), loc="upper left", title="study", fontsize=14)
 plt.suptitle("Number of diff. expressed genes")
-plt.savefig(deg_count_path)
+plt.savefig(deg_count_path, bbox_inches="tight")
 
 plot_deg_count.to_csv(deg_count_path.replace(".pdf", ".csv"))
 

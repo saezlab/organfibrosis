@@ -95,9 +95,7 @@ ligands_filtered = set(ligands) - set(ecm["genesymbol"])
 receptors_filtered = set(receptors) - set(ecm["genesymbol"])
 
 all_filtered = ligands_filtered | receptors_filtered
-extra_pairs = list(
-    set(list(zip(all_filtered, ["COL1A1" for i in range(len(all_filtered))])))
-)
+
 
 
 def upset_to_dataframe(upset_data: Union[pd.Series, pd.DataFrame], value_col: str = "count") -> pd.DataFrame:
@@ -117,7 +115,7 @@ def upset_to_dataframe(upset_data: Union[pd.Series, pd.DataFrame], value_col: st
 cosine_sim_dict = {}
 for organ in organs:
     cosine_sim = pd.read_csv(cosine_sim_paths[organ], index_col=0)
-    cosine_sim = cosine_sim[cosine_sim["receptor"] == 'COL1A1']
+    cosine_sim = cosine_sim[cosine_sim["receptor"] == 'NABA_CORE_MATRISOME']
     cosine_sim["organ"] = organ
     cosine_sim["cond_test"] = cosine_sim["cond_test"].replace(
         {
@@ -146,6 +144,7 @@ with open(organ_spec_up, "rb") as fp:
 high_both_orgspec = {}
 data_allorgan_dict = {}
 
+
 fig, axs = plt.subplots(2, 2, figsize=(9, 8), tight_layout=True)
 ax = axs.ravel()
 scatter_org_rows = []
@@ -161,17 +160,25 @@ for count, organ in enumerate(organs):
         .index
     )
 
+    print(top_hits_up[:5])
+    print(organ)
+
     only_disease =  cosine_sim_dict[organ][cosine_sim_dict[organ]['cond_test'] == 'fibrosis']
     mean_morans = only_disease.groupby('ligand')['morans'].mean()
+    print(lig_rec_fibs.head())
+    print(mean_morans.head())
 
     to_plot = (
         lig_rec_fibs.loc[lig_rec_fibs["summary_row"] == organ_real,]
         .loc[top_hits_up]
-        .merge(mean_morans, left_index=True, right_index=True)
+        .merge(mean_morans, left_index=True, right_index=True, how = 'outer')
+        #.merge(mean_morans, left_index=True, right_index=True)
     )
+    print(to_plot.head())
 
-    x_thresh = np.percentile(to_plot["eff"], 80)
-    y_thresh = np.percentile(to_plot["morans"], 80)
+    x_thresh =  np.percentile(to_plot[~to_plot['eff'].isna()]['eff'], 80)
+    y_thresh =  np.percentile(to_plot[~to_plot['morans'].isna()]['morans'], 80)
+
 
     to_plot["expression"] = to_plot["eff"].rank(pct=True)
     to_plot["spatial"] = to_plot["morans"].rank(pct=True)
@@ -241,15 +248,15 @@ for count, organ in enumerate(organs):
     ]
     mean_morans = only_disease.groupby("ligand")["morans"].mean()
     to_plot = lig_rec_fibs.loc[lig_rec_fibs["summary_row"] == "random effect",].merge(
-        mean_morans, left_index=True, right_index=True, how="left"
+        mean_morans, left_index=True, right_index=True, how="outer"
     )
 
-    x_thresh = np.percentile(to_plot["eff"], 80)
+    x_thresh =  np.percentile(to_plot[~to_plot['eff'].isna()]['eff'], 80)
     to_plot["x_percentile"] = to_plot["eff"].rank(pct=True)
 
     to_plot = to_plot.drop(columns="w_fe").dropna(axis=0)
 
-    y_thresh = np.percentile(to_plot["morans"], 80)
+    y_thresh =  np.percentile(to_plot[~to_plot['morans'].isna()]['morans'], 80)
     to_plot["y_percentile"] = to_plot["morans"].rank(pct=True)
 
     # Make a flag column
