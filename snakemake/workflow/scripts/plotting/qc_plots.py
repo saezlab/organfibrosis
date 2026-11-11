@@ -435,6 +435,16 @@ lm_all.to_csv(lm_all_output, index=True)
 
 # Plot disease etiology distributions per study
 
+# Colorblind-friendly palette (Okabe-Ito + Tol's wine as 9th color); control is always neutral grey
+okabe_ito = ["#E69F00", "#56B4E9", "#009E73", "#F0E442",
+             "#0072B2", "#D55E00", "#CC79A7", "#000000", "#882255"]
+
+def etiology_colors(columns):
+    others = [c for c in columns if c != "control"]
+    cmap = {"control": "#BBBBBB"}
+    cmap.update({c: okabe_ito[i % len(okabe_ito)] for i, c in enumerate(others)})
+    return [cmap[c] for c in columns]
+
 group_df = pd.concat(group_dict.values(), ignore_index=True)
 fig, ax = plt.subplots(1, 4, figsize=(16, 3), sharey=True)
 for count, organ in enumerate(group_df["organ"].unique()):
@@ -443,7 +453,8 @@ for count, organ in enumerate(group_df["organ"].unique()):
     # Move control column to first position
     first_column = pivot_df.pop("control")
     pivot_df.insert(0, "control", first_column)
-    s = pivot_df.plot(kind="bar", stacked=True, ax=ax[count])
+    s = pivot_df.plot(kind="bar", stacked=True, ax=ax[count],
+                      color=etiology_colors(pivot_df.columns), edgecolor="white", linewidth=0.5)
     ax[count].set_xlabel("study")
     ax[count].set_ylabel("samples")
     ax[count].legend(title="etiologies", loc="lower left", bbox_to_anchor=(0, 1))
@@ -462,7 +473,8 @@ for count, organ in enumerate(group_df["organ"].unique()):
     # Move control column to first position
     first_column = pivot_df.pop("control")
     pivot_df.insert(0, "control", first_column)
-    s = pivot_df.plot(kind="bar", stacked=True, ax=ax[count], width = 0.9)
+    s = pivot_df.plot(kind="bar", stacked=True, ax=ax[count], width = 0.9,
+                      color=etiology_colors(pivot_df.columns), edgecolor="white", linewidth=0.5)
     ax[count].set_xlabel("study")
     ax[count].set_ylabel("relative count [%]")
     ax[count].legend(title="etiologies", loc="lower left", bbox_to_anchor=(0, 1))

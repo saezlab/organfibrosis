@@ -217,6 +217,26 @@ adata.obs["sample_study"] = (
 
 
 
+# Colorblind-friendly palette (Okabe-Ito + Tol's wine),
+# extended with Paul Tol's muted colors for categoricals with many levels (e.g. leiden clusters)
+cb_palette = ["#E69F00", "#56B4E9", "#009E73", "#F0E442",
+              "#0072B2", "#D55E00", "#CC79A7", "#000000", "#882255",
+              "#332288", "#88CCEE", "#44AA99", "#117733", "#999933",
+              "#DDCC77", "#CC6677", "#AA4499"]
+
+def set_cb_colors(adata_sub, key, grey_category=None):
+    """Set colorblind-friendly colors for a categorical obs column (used by scanpy plots).
+    grey_category (e.g. 'control') is always plotted in neutral grey."""
+    adata_sub.obs[key] = adata_sub.obs[key].astype("category").cat.remove_unused_categories()
+    categories = list(adata_sub.obs[key].cat.categories)
+    others = [c for c in categories if c != grey_category]
+    if len(others) > len(cb_palette):
+        print(f"Warning: {key} has {len(others)} categories, colors will repeat")
+    cmap = {c: cb_palette[i % len(cb_palette)] for i, c in enumerate(others)}
+    cmap[grey_category] = "#BBBBBB"
+    adata_sub.uns[f"{key}_colors"] = [cmap[c] for c in categories]
+
+
 # UMAP overview per organ
 for organ in organs:
     print(organ)
@@ -225,17 +245,22 @@ for organ in organs:
     n_clusters = plot.obs[f'leiden_{resolution}_scvi'].nunique()
     print(n_clusters)
 
+    # colorblind-friendly colors for leiden clusters, disease etiologies and studies
+    set_cb_colors(plot, f'leiden_{resolution}_scvi')
+    set_cb_colors(plot, 'grouping', grey_category='control')
+    set_cb_colors(plot, 'study')
+
     fig = sc.pl.embedding(
             plot,
             basis = 'X_umap_scvi',
-            color = [f'leiden_{resolution}_scvi','substate', 'grouping', 'study', 'cond_test', 'cell_type1', 'cell_type2'],
+            color = [f'leiden_{resolution}_scvi','substate', 'grouping', 'study', 'cond_test', 'cell_type1', 'cell_type2'], 
             #palette = condition_colors,
             show = False,
             title = [f'leiden clusters', f'cell states', 'disease etiology','study', 'condition', 'original annotations', 'original annotations'],
             return_fig = True,
             palette = None,
             wspace = 0.2,
-            ncols = 1,
+            ncols = 1, 
             )
     for ax in fig.axes:
         ax.set_xlabel("UMAP 1") 
@@ -264,7 +289,7 @@ for organ in organs:
     fig = sc.pl.embedding(
             plot,
             basis = 'X_umap_scvi',
-            color = ['cell_type1', 'cell_type2'],
+            color = ['cell_type1', 'cell_type2'], 
             #palette = condition_colors,
             show = False,
             title = ['original annotations', 'original annotations'],
@@ -272,13 +297,13 @@ for organ in organs:
             return_fig = True,
             palette = None,
             wspace = 0.2,
-            ncols = 1,
+            ncols = 1, 
             size = 8
             )
     for ax in fig.axes:
-        ax.set_xlabel("UMAP 1")
-        ax.set_ylabel("UMAP 2")
-    fig.suptitle(f"{real_names[organ]}", fontsize=20, y=1.05)
+        ax.set_xlabel("UMAP 1") 
+        ax.set_ylabel("UMAP 2")  
+    fig.suptitle(f"{real_names[organ]}", fontsize=20, y=1.05) 
     fig.savefig(umap_output2[organ], bbox_inches="tight")
     plt.close(fig)
 
@@ -355,7 +380,7 @@ pan_tissue_mf_markers = {
         "COL3A1",
         "POSTN",
         "CTHRC1",
-        'FN1',
+        'FN1', 
         'FAP'],
     'pericyte':[
         "RGS5",
